@@ -4,15 +4,13 @@ from torch.utils.data import DataLoader
 from parameters import *
 from loadDataset import *
 from normalization import decodeOneHot
-from model import *
+from model_utils import *
 from voigt_rotation import *
 from errorAnalysis import computeR2
 
 if __name__ == '__main__':
     
     torch.manual_seed(1234)
-    torch.cuda.manual_seed(1234)
-    np.random.seed(1234)
     # os.system('mkdir models')
     # os.system('mkdir TestReg')
     # os.system('mkdir TestReg/history')
@@ -62,7 +60,7 @@ if __name__ == '__main__':
             F1_test_history.append(F1_test_loss)
         print('\n-------------------------------------')
         # save model
-        torch.save(F1, "models/F1.pt")
+        torch.save(F1,"models/F1.pt")
         # export loss history
         exportList('TestReg/history/F1_train_history',F1_train_history)
         exportList('TestReg/history/F1_test_history',F1_test_history)
@@ -92,10 +90,8 @@ if __name__ == '__main__':
                 F2_features_train_pred = assemble_F2_features(C_ort_train_pred,R1_train,V_train,C_ort_scaling)
                 # forward pass F2
                 C_hat_train_pred = F2(F2_features_train_pred)
-                C_train_pred = rotate_C(C_hat_train_pred,R2_train,C_scaling,C_hat_scaling)
-                # back-rotate given C to C_hat
-                # TODO remove backrotate_C to forward rotation
-                # C_hat_train = backrotate_C(C_train,R2_train,C_scaling,C_hat_scaling)
+                # rotate with given R2 to obtain C
+                C_train_pred = rotate_C(C_hat_train_pred,R2_train,C_hat_scaling,C_scaling)
                 # compute loss
                 fwdLoss = lossFn(C_train_pred,C_train)
                 # optimize
@@ -110,8 +106,7 @@ if __name__ == '__main__':
             C_ort_test_pred = F1(F1_features_test)
             F2_features_test_pred = assemble_F2_features(C_ort_test_pred,R1_test,V_test,C_ort_scaling)
             C_hat_test_pred = F2(F2_features_test_pred)
-            C_test_pred = rotate_C(C_hat_test_pred,R2_test,C_scaling,C_hat_scaling)
-            # C_hat_test = backrotate_C(C_test,R2_test,C_scaling,C_hat_scaling)
+            C_test_pred = rotate_C(C_hat_test_pred,R2_test,C_hat_scaling,C_scaling)
             F2_test_loss = lossFn(C_test_pred,C_test).item()
             print("| {}:{}/{} | F2_EpochTrainLoss: {:.2e} | F2_EpochTestLoss: {:.2e}".format("F2",F1_epoch_iter,F2_train_epochs, F2_train_loss, F2_test_loss))
             F2_train_history.append(F2_train_loss)
@@ -155,7 +150,7 @@ if __name__ == '__main__':
                 # forward pass F2
                 C_hat_train_pred_pred = F2(F2_features_train_pred)
                 # apply second rotation (using 6D representation)
-                C_train_pred_pred = rotate_C(C_hat_train_pred_pred,R2_train_pred,C_scaling,C_hat_scaling,method='6D')
+                C_train_pred_pred = rotate_C(C_hat_train_pred_pred,R2_train_pred,C_hat_scaling,C_scaling,method='6D')
                 # compute loss
                 invLoss = lossFn(C_train_pred_pred, C_train)
                 # optimize
@@ -172,7 +167,7 @@ if __name__ == '__main__':
             F2_features_test_pred = assemble_F2_features(C_ort_test_pred,R1_test_pred,V_test_pred,C_ort_scaling,method='6D')
             C_hat_test_pred_pred = F2(F2_features_test_pred)
             # for final rotation: rotate this once more by additional 6 predicted parameters, trainset must contain prerotated stiffnesses
-            C_test_pred_pred = rotate_C(C_hat_test_pred_pred, R2_test_pred, C_scaling, C_hat_scaling,method='6D')
+            C_test_pred_pred = rotate_C(C_hat_test_pred_pred, R2_test_pred, C_hat_scaling, C_scaling,method='6D')
             invTestLoss = lossFn(C_test_pred_pred,C_test).item()
             inv_scheduler.step(invTestLoss)
             print("| {}:{}/{} | lr: {:.2e} | invEpochTrainLoss: {:.2e} | invEpochTestLoss: {:.2e}".format("inv",inv_epoch_iter, inv_train_epochs, inv_optimizer.param_groups[0]['lr'], inv_train_loss, invTestLoss))
@@ -189,7 +184,7 @@ if __name__ == '__main__':
         G2 = torch.load("models/G2.pt",map_location=device)
     G1.eval(), G2.eval()
 
-    F1_features_test, R1_test, V_test, R2_test, C_ort_test, C_test = next(iter(test_data_loader))
+    # F1_features_test, R1_test, V_test, R2_test, C_ort_test, C_test = next(iter(test_data_loader))
     with torch.no_grad():
         ## Testing
         # if required, raise temperature for larger variety of predictions
@@ -203,13 +198,13 @@ if __name__ == '__main__':
         C_ort_test_pred = F1(F1_features_test)
         F2_features_test_pred = assemble_F2_features(C_ort_test_pred,R1_test,V_test,C_ort_scaling)
         C_hat_test_pred = F2(F2_features_test_pred)
-        C_test_pred = rotate_C(C_hat_test_pred, R2_test, C_scaling, C_hat_scaling)
+        C_test_pred = rotate_C(C_hat_test_pred, R2_test, C_hat_scaling, C_scaling)
         
         # forward prediction based on inverse designed lattice
         C_ort_test_pred_pred = F1(F1_features_test_pred)
         F2_features_test_pred_pred = assemble_F2_features(C_ort_test_pred_pred,R1_test_pred,V_test_pred,C_ort_scaling,method='6D')
         C_hat_test_pred_pred = F2(F2_features_test_pred_pred)
-        C_test_pred_pred = rotate_C(C_hat_test_pred_pred, R2_test_pred, C_scaling, C_hat_scaling,method='6D')
+        C_test_pred_pred = rotate_C(C_hat_test_pred_pred, R2_test_pred, C_hat_scaling, C_scaling,method='6D')
 
         print('\nR2 values:\n--------------------------------------------')
         F1ComponentR2 = computeR2(C_ort_test_pred, C_ort_test)
@@ -222,17 +217,17 @@ if __name__ == '__main__':
         ###############---Export ---##############
         print('\nExporting:')
 
-        ###############---Push tensors back to CPU ---##############
-
-        # #decode one-hot-encoding
+        # #decode one-hot-encoding into original lattice nomenclature (test set)
         rho_U_test, topology_test = torch.split(F1_features_test, [4,27], dim=1)
-        topology = decodeOneHot(topology_test,'shift')
+        topology = decodeOneHot(topology_test)
         F1_features_test = torch.cat((rho_U_test,topology),dim=1)
 
+        # #decode one-hot-encoding into original lattice nomenclature (inverse prediction)
         rho_U_test_pred, topology_test_pred = torch.split(F1_features_test_pred, [4,27], dim=1)
-        topology_pred = decodeOneHot(topology_test_pred,'shift')
+        topology_pred = decodeOneHot(topology_test_pred)
         F1_features_test_pred = torch.cat((rho_U_test_pred,topology_pred),dim=1)
 
+        # decode 6D representation into angle-axis representation
         R1_test_pred_angle_axis = rotation_6d_to_angleaxis(R1_test_pred)
         R2_test_pred_angle_axis = rotation_6d_to_angleaxis(R2_test_pred)
         
@@ -243,15 +238,18 @@ if __name__ == '__main__':
         F1_features_test_pred = F1_features_scaling.unnormalize(F1_features_test_pred)
         V_test_pred = V_scaling.unnormalize(V_test_pred)
 
+        # construct full inversely designed lattice descriptor
         full_pred = torch.cat((F1_features_test_pred,R1_test_pred_angle_axis,R2_test_pred_angle_axis,V_test_pred),dim=1)
 
+        # push tensors back to cpu
         full_pred = full_pred.cpu()
         C_test = C_test.cpu()
         C_test_pred = C_test_pred.cpu()
         C_test_pred_pred = C_test_pred_pred.cpu()
         
+        # export tensors for post-processing
         exportTensor("TestReg/full_pred",full_pred,all_names)
         exportTensor("TestReg/C_test",C_test,C_names)
         exportTensor("TestReg/C_test_pred",C_test_pred,C_names)
         exportTensor("TestReg/C_test_pred_pred",C_test_pred_pred,C_names)
-        print('--------------------------------------------\n')
+        print('Finished.\n')

@@ -47,12 +47,9 @@ def softmax(input, t):
 
 def gumbel(input, t):
     return F.gumbel_softmax(input, tau=t, hard=True, eps=1e-10, dim=1)
-
-# def getOrthogonalStiffness(F1,F1_features,C_ort_scaling):
-#     return C_ort_scaling.unnormalize(F1(F1_features))
     
 def assemble_F2_features(C_ort,R1,V,C_ort_scaling,method=None):
-    # scale C_ort to its original range to compute R1
+    # scale C_ort to its original range
     C_ort_unscaled = C_ort_scaling.unnormalize(C_ort)
     # rotate C_ort (directly in Voigt notation)
     C_tilde = direct_rotate(C_ort_unscaled,R1,orthotropic=True,method=method)
@@ -63,6 +60,7 @@ def invModel_output(G1,G2,input,t,activation):
     topology1,topology2,topology3,rep1,rep2,rep3 = torch.split(G1(input), [7,7,7,2,2,2], dim=1)
     m = getActivation('sigmoid')
     if(activation == 'one-hot'):
+        # enforce one-hot encoding by small temperature
         t = 1.e-6
     if(activation == 'softmax' or activation == 'one-hot'):
         topology = torch.cat((softmax(topology1,t),softmax(topology2,t),softmax(topology3,t),softmax(rep1,t),softmax(rep2,t),softmax(rep3,t)), dim=1)
@@ -74,14 +72,13 @@ def invModel_output(G1,G2,input,t,activation):
 
     features = torch.cat((topology, input), dim=1)
     rho_U, V, rot1, rot2 = torch.split(G2(features), [4,3,6,6], dim=1)
-    # scale to range using sigmoid
+    # scale to [0,1] using sigmoid
     rho_U, V = m(rho_U), m(V)
 
     return rho_U, V, rot1, rot2, topology
     
-# input: normalized rotated C, output: normalized un-rotated C
-def rotate_C(C_hat,R,C_scaling,C_hat_scaling,method=None):
-    temp = C_hat_scaling.unnormalize(C_hat)
+def rotate_C(C_in,R,C_in_scaling,C_out_scaling,method=None):
+    temp = C_in_scaling.unnormalize(C_in)
     temp = direct_rotate(temp,R,method=method)
-    C = C_scaling.normalize(temp)
+    C = C_out_scaling.normalize(temp)
     return C

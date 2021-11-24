@@ -57,7 +57,7 @@ class Normalization:
             else:
                 raise ValueError("Data type must be either continuous or categorical")
 
-        # neglect categorical features which have been one-hot encoded and appended at the end (there are probably more elegant ways to do this)
+        # delete original (not one-hot encoded) categorical features
         j = 0
         for i in np.array(list_index_cat, dtype=np.int64):          
             temp = torch.cat([temp[:,0:i+j], temp[:,i+1+j:]],dim=1)
@@ -97,20 +97,16 @@ class Normalization:
                 raise ValueError("Data type must be either continuous or categorical")
         return temp
 
-# convert one-hot representation back to categorical integers under the assumption:
-# [3,3,3,4,4,4] = [lattice_type1, ..., ..., lattice_rep1, ..., ...]
-def decodeOneHot(data,string):
-    
+# convert one-hot representation back to categorical integers
+def decodeOneHot(data):
     type1,type2,type3,rep1,rep2,rep3 = torch.split(data,[7,7,7,2,2,2],dim=1)
-    shift = 0
-    if(string == 'shift'):
-        shift = 1
-    type1,type2,type3,rep1,rep2,rep3 = torch.argmax(type1, dim=1),torch.argmax(type2,dim=1),torch.argmax(type3,dim=1),torch.argmax(rep1,dim=1)+shift,torch.argmax(rep2,dim=1)+shift,torch.argmax(rep3, dim=1)+shift
+    # we increment the repition to convert from binary to [1,2] as defined in the publication
+    type1,type2,type3,rep1,rep2,rep3 = torch.argmax(type1, dim=1),torch.argmax(type2,dim=1),torch.argmax(type3,dim=1),torch.argmax(rep1,dim=1)+1,torch.argmax(rep2,dim=1)+1,torch.argmax(rep3, dim=1)+1
 
     types = torch.stack((type1,type2,type3),dim=1)
     reps = torch.stack((rep1,rep2,rep3),dim=1)
 
-    # sort by lattices
+    # sort by lattices 
     sorted_types, indices = torch.sort(types)
     sorted_reps = smart_sort(reps, indices)
 

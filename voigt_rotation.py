@@ -95,13 +95,13 @@ def rotation_6d_to_angleaxis(rot_6d):
     t = rot_matrix[:,0,0]+rot_matrix[:,1,1]+rot_matrix[:,2,2]
     theta = torch.atan2(r,t-1.)
 
-    # This step is very imporant, as we only require a positive e3-component in the later rotation! This mirrors the axis w.r.t. the origin in case e3 is originally negative.
+    # We below enforce a positive e3-component of the angle-axis representation by mirroring the rotation axis w.r.t. the origin in the case e3 is indeed negative.
+    # This is necessary as we construct e3 by e3=\sqrt(1.-e1^2-e2^2) (>= 0 for any e1 and e2).
     for i in range(len(z)):
         if (z[i] < 0):
             theta[i] = -theta[i]
             x[i] = -x[i]
             y[i] = -y[i]
-
     return torch.stack((-theta,torch.div(x,r),torch.div(y,r)),dim=1)
 
 def matrix_to_rotation_6d(rot):
