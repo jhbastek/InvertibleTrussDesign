@@ -35,8 +35,7 @@ def exportList(name,data):
 def getNormalization():
     
     ######################################################    
-    data = pd.read_csv(dataPath,nrows=1000)
-    
+    data = pd.read_csv(dataPath,nrows=3000000)
     # check for NaNs 
     assert not data.isnull().values.any()
     
@@ -49,7 +48,7 @@ def getNormalization():
 
     a,b,c = torch.split(R2,[1,1,1],dim=1)
     R2_transposed = torch.cat((-a,b,c),dim=1)
-    unrotatedlabelTensor = direct_rotate_full(C,R2_transposed)
+    unrotatedlabelTensor = direct_rotate(C,R2_transposed)
 
     ##############---INIT NORMALIZATION---##############
     F1_features_scaling = Normalization(F1_features,F1_features_types,F1_features_scaling_strategy)
@@ -86,7 +85,7 @@ def getSavedNormalization():
 def getDataset(F1_features_scaling, V_scaling, C_ort_scaling, C_scaling):
     
     ######################################################    
-    data = pd.read_csv(dataPath,nrows=1000)
+    data = pd.read_csv(dataPath,nrows=3000000)
     
     print('Data: ',data.shape)       
     # check for NaNs 

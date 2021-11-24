@@ -47,22 +47,6 @@ def Voigt_to_Voigt_21(C):
             iter += 1
     return C_out
 
-# def get_rotation_matrix(theta, n1, n2):
-#     batch_size = len(theta)
-#     eps = 2e-6 # important to ensure n3-sqrt is not negative
-#     r = torch.zeros((batch_size,3,3), dtype=float, device=device)
-#     n3 = torch.sqrt(1. - torch.square(n1) - torch.square(n2) + eps)
-#     r[:,0,0] = torch.square(n1[:])*(1-torch.cos(theta[:])) + torch.cos(theta[:])
-#     r[:,0,1] = n1[:]*n2[:]*(1.-torch.cos(theta[:])) - n3*torch.sin(theta[:])
-#     r[:,0,2] = n1[:]*n3[:]*(1.-torch.cos(theta[:])) + n2*torch.sin(theta[:])
-#     r[:,1,0] = n2[:]*n1[:]*(1.-torch.cos(theta[:])) + n3*torch.sin(theta[:])
-#     r[:,1,1] = torch.square(n2)*(1-torch.cos(theta[:])) + torch.cos(theta[:])
-#     r[:,1,2] = n2[:]*n3[:]*(1.-torch.cos(theta[:])) - n1*torch.sin(theta[:])
-#     r[:,2,0] = n3[:]*n1[:]*(1.-torch.cos(theta[:])) - n2*torch.sin(theta[:])
-#     r[:,2,1] = n3[:]*n2[:]*(1.-torch.cos(theta[:])) + n1*torch.sin(theta[:])
-#     r[:,2,2] = torch.square(n3[:])*(1-torch.cos(theta[:])) + torch.cos(theta[:])
-#     return r
-
 def get_rotation_matrix(theta, n1, n2):
     batch_size = len(theta)
     eps = 2e-6 # important to ensure n3-sqrt is not negative
@@ -123,25 +107,71 @@ def rotation_6d_to_angleaxis(rot_6d):
 def matrix_to_rotation_6d(rot):
     return torch.flatten(torch.split(rot,[2,1],dim=1)[0],start_dim=1, end_dim=2).float()
 
-# direct matrix multiplication according to Bower 'Applied Mechanics of Solids' [Chapter 3]
-def direct_rotate(C,rot):
+# direct stiffness rotation in Voigt notation (for details see Bower's 'Applied Mechanics of Solids' [Chapter 3])
+def direct_rotate(C,rot,orthotropic=False,method=None):
     
-    R = get_rotation_matrix(rot[:,0],rot[:,1],rot[:,2])
+    if method == '6D':
+        R = rotation_6d_to_matrix(rot)
+    else:
+        R = get_rotation_matrix(rot[:,0],rot[:,1],rot[:,2])
     batch_size = len(C)
     Voigt = torch.zeros((batch_size,6,6), device=device)
 
-    Voigt[:,0,0] = C[:,0]
-    Voigt[:,0,1] = C[:,1]
-    Voigt[:,1,0] = C[:,1]
-    Voigt[:,0,2] = C[:,2]
-    Voigt[:,2,0] = C[:,2]
-    Voigt[:,1,1] = C[:,3]
-    Voigt[:,1,2] = C[:,4]
-    Voigt[:,2,1] = C[:,4]
-    Voigt[:,2,2] = C[:,5]
-    Voigt[:,3,3] = C[:,6]
-    Voigt[:,4,4] = C[:,7]
-    Voigt[:,5,5] = C[:,8]
+    if orthotropic:
+        Voigt[:,0,0] = C[:,0]
+        Voigt[:,0,1] = C[:,1]
+        Voigt[:,1,0] = C[:,1]
+        Voigt[:,0,2] = C[:,2]
+        Voigt[:,2,0] = C[:,2]
+        Voigt[:,1,1] = C[:,3]
+        Voigt[:,1,2] = C[:,4]
+        Voigt[:,2,1] = C[:,4]
+        Voigt[:,2,2] = C[:,5]
+        Voigt[:,3,3] = C[:,6]
+        Voigt[:,4,4] = C[:,7]
+        Voigt[:,5,5] = C[:,8]
+    else: 
+        Voigt[:,0,0] = C[:,0]
+        Voigt[:,0,1] = C[:,1]
+        Voigt[:,1,0] = C[:,1]
+        Voigt[:,0,2] = C[:,2]
+        Voigt[:,2,0] = C[:,2]
+        Voigt[:,0,3] = C[:,3]
+        Voigt[:,3,0] = C[:,3]
+        Voigt[:,0,4] = C[:,4]
+        Voigt[:,4,0] = C[:,4]
+        Voigt[:,0,5] = C[:,5]
+        Voigt[:,5,0] = C[:,5]
+
+        Voigt[:,1,1] = C[:,6]
+        Voigt[:,1,2] = C[:,7]
+        Voigt[:,2,1] = C[:,7]
+        Voigt[:,1,3] = C[:,8]
+        Voigt[:,3,1] = C[:,8]
+        Voigt[:,1,4] = C[:,9]
+        Voigt[:,4,1] = C[:,9]
+        Voigt[:,1,5] = C[:,10]
+        Voigt[:,5,1] = C[:,10]
+
+        Voigt[:,2,2] = C[:,11]
+        Voigt[:,2,3] = C[:,12]
+        Voigt[:,3,2] = C[:,12]
+        Voigt[:,2,4] = C[:,13]
+        Voigt[:,4,2] = C[:,13]
+        Voigt[:,2,5] = C[:,14]
+        Voigt[:,5,2] = C[:,14]
+        
+        Voigt[:,3,3] = C[:,15]
+        Voigt[:,3,4] = C[:,16]
+        Voigt[:,4,3] = C[:,16]
+        Voigt[:,3,5] = C[:,17]
+        Voigt[:,5,3] = C[:,17]
+
+        Voigt[:,4,4] = C[:,18]
+        Voigt[:,4,5] = C[:,19]
+        Voigt[:,5,4] = C[:,19]
+
+        Voigt[:,5,5] = C[:,20]
 
     K0 = torch.mul(R,R)
     K1 = torch.zeros((batch_size,3,3), device=device)
@@ -180,255 +210,6 @@ def direct_rotate(C,rot):
     K3[:,2,2] = R[:,0,0]*R[:,1,1]+R[:,0,1]*R[:,1,0]
 
     K1 = 2*K1
-    K_top = torch.cat((K0,K1),2)
-    K_bot = torch.cat((K2,K3),2)
-    K = torch.cat((K_top,K_bot),1).float()
-
-    return Voigt_to_Voigt_21(torch.matmul(torch.matmul(K,Voigt),torch.transpose(K,1,2))).float()
-
-# direct matrix multiplication of fully populated Voigt matrix according to Bower 'Applied Mechanics of Solids' [Chapter 3]
-def direct_rotate_full(C,rot):
-    
-    R = get_rotation_matrix(rot[:,0],rot[:,1],rot[:,2])
-    
-    batch_size = len(C)
-    Voigt = torch.zeros((batch_size,6,6), device=device)
-
-    Voigt[:,0,0] = C[:,0]
-    Voigt[:,0,1] = C[:,1]
-    Voigt[:,1,0] = C[:,1]
-    Voigt[:,0,2] = C[:,2]
-    Voigt[:,2,0] = C[:,2]
-    Voigt[:,0,3] = C[:,3]
-    Voigt[:,3,0] = C[:,3]
-    Voigt[:,0,4] = C[:,4]
-    Voigt[:,4,0] = C[:,4]
-    Voigt[:,0,5] = C[:,5]
-    Voigt[:,5,0] = C[:,5]
-
-    Voigt[:,1,1] = C[:,6]
-    Voigt[:,1,2] = C[:,7]
-    Voigt[:,2,1] = C[:,7]
-    Voigt[:,1,3] = C[:,8]
-    Voigt[:,3,1] = C[:,8]
-    Voigt[:,1,4] = C[:,9]
-    Voigt[:,4,1] = C[:,9]
-    Voigt[:,1,5] = C[:,10]
-    Voigt[:,5,1] = C[:,10]
-
-    Voigt[:,2,2] = C[:,11]
-    Voigt[:,2,3] = C[:,12]
-    Voigt[:,3,2] = C[:,12]
-    Voigt[:,2,4] = C[:,13]
-    Voigt[:,4,2] = C[:,13]
-    Voigt[:,2,5] = C[:,14]
-    Voigt[:,5,2] = C[:,14]
-    
-    Voigt[:,3,3] = C[:,15]
-    Voigt[:,3,4] = C[:,16]
-    Voigt[:,4,3] = C[:,16]
-    Voigt[:,3,5] = C[:,17]
-    Voigt[:,5,3] = C[:,17]
-
-    Voigt[:,4,4] = C[:,18]
-    Voigt[:,4,5] = C[:,19]
-    Voigt[:,5,4] = C[:,19]
-
-    Voigt[:,5,5] = C[:,20]
-
-    K0 = torch.mul(R,R)
-    K1 = torch.zeros((batch_size,3,3), device=device)
-    K2 = torch.zeros((batch_size,3,3), device=device)
-    K3 = torch.zeros((batch_size,3,3), device=device)
-    K = torch.zeros((batch_size,6,6), device=device)
-
-    K1[:,0,0] = R[:,0,1]*R[:,0,2]
-    K1[:,0,1] = R[:,0,2]*R[:,0,0]
-    K1[:,0,2] = R[:,0,0]*R[:,0,1]
-    K1[:,1,0] = R[:,1,1]*R[:,1,2]
-    K1[:,1,1] = R[:,1,2]*R[:,1,0]
-    K1[:,1,2] = R[:,1,0]*R[:,1,1] 
-    K1[:,2,0] = R[:,2,1]*R[:,2,2]
-    K1[:,2,1] = R[:,2,2]*R[:,2,0]
-    K1[:,2,2] = R[:,2,0]*R[:,2,1]
-
-    K2[:,0,0] = R[:,1,0]*R[:,2,0]
-    K2[:,0,1] = R[:,1,1]*R[:,2,1]
-    K2[:,0,2] = R[:,1,2]*R[:,2,2]
-    K2[:,1,0] = R[:,2,0]*R[:,0,0]
-    K2[:,1,1] = R[:,2,1]*R[:,0,1]
-    K2[:,1,2] = R[:,2,2]*R[:,0,2]
-    K2[:,2,0] = R[:,0,0]*R[:,1,0]
-    K2[:,2,1] = R[:,0,1]*R[:,1,1]
-    K2[:,2,2] = R[:,0,2]*R[:,1,2]
-
-    K3[:,0,0] = R[:,1,1]*R[:,2,2]+R[:,1,2]*R[:,2,1]
-    K3[:,0,1] = R[:,1,2]*R[:,2,0]+R[:,1,0]*R[:,2,2]
-    K3[:,0,2] = R[:,1,0]*R[:,2,1]+R[:,1,1]*R[:,2,0]
-    K3[:,1,0] = R[:,2,1]*R[:,0,2]+R[:,2,2]*R[:,0,1]
-    K3[:,1,1] = R[:,2,2]*R[:,0,0]+R[:,2,0]*R[:,0,2]
-    K3[:,1,2] = R[:,2,0]*R[:,0,1]+R[:,2,1]*R[:,0,0]
-    K3[:,2,0] = R[:,0,1]*R[:,1,2]+R[:,0,2]*R[:,1,1]
-    K3[:,2,1] = R[:,0,2]*R[:,1,0]+R[:,0,0]*R[:,1,2]
-    K3[:,2,2] = R[:,0,0]*R[:,1,1]+R[:,0,1]*R[:,1,0]
-
-    K1 = 2*K1
-    K_top = torch.cat((K0,K1),2)
-    K_bot = torch.cat((K2,K3),2)
-    K = torch.cat((K_top,K_bot),1).float()
-
-    return Voigt_to_Voigt_21(torch.matmul(torch.matmul(K,Voigt),torch.transpose(K,1,2))).float()
-
-    # direct matrix multiplication according to Bower 'Applied Mechanics of Solids' [Chapter 3]
-def direct_rotate_6D(C,rot):
-    
-    R = rotation_6d_to_matrix(rot)
-    
-    batch_size = len(C)
-    Voigt = torch.zeros((batch_size,6,6), device=device)
-
-    Voigt[:,0,0] = C[:,0]
-    Voigt[:,0,1] = C[:,1]
-    Voigt[:,1,0] = C[:,1]
-    Voigt[:,0,2] = C[:,2]
-    Voigt[:,2,0] = C[:,2]
-    Voigt[:,1,1] = C[:,3]
-    Voigt[:,1,2] = C[:,4]
-    Voigt[:,2,1] = C[:,4]
-    Voigt[:,2,2] = C[:,5]
-    Voigt[:,3,3] = C[:,6]
-    Voigt[:,4,4] = C[:,7]
-    Voigt[:,5,5] = C[:,8]
-
-    K0 = torch.mul(R,R)
-    K1 = torch.zeros((batch_size,3,3), device=device)
-    K2 = torch.zeros((batch_size,3,3), device=device)
-    K3 = torch.zeros((batch_size,3,3), device=device)
-    K = torch.zeros((batch_size,6,6), device=device)
-
-    K1[:,0,0] = R[:,0,1]*R[:,0,2]
-    K1[:,0,1] = R[:,0,2]*R[:,0,0]
-    K1[:,0,2] = R[:,0,0]*R[:,0,1]
-    K1[:,1,0] = R[:,1,1]*R[:,1,2]
-    K1[:,1,1] = R[:,1,2]*R[:,1,0]
-    K1[:,1,2] = R[:,1,0]*R[:,1,1] 
-    K1[:,2,0] = R[:,2,1]*R[:,2,2]
-    K1[:,2,1] = R[:,2,2]*R[:,2,0]
-    K1[:,2,2] = R[:,2,0]*R[:,2,1]
-
-    K2[:,0,0] = R[:,1,0]*R[:,2,0]
-    K2[:,0,1] = R[:,1,1]*R[:,2,1]
-    K2[:,0,2] = R[:,1,2]*R[:,2,2]
-    K2[:,1,0] = R[:,2,0]*R[:,0,0]
-    K2[:,1,1] = R[:,2,1]*R[:,0,1]
-    K2[:,1,2] = R[:,2,2]*R[:,0,2]
-    K2[:,2,0] = R[:,0,0]*R[:,1,0]
-    K2[:,2,1] = R[:,0,1]*R[:,1,1]
-    K2[:,2,2] = R[:,0,2]*R[:,1,2]
-
-    K3[:,0,0] = R[:,1,1]*R[:,2,2]+R[:,1,2]*R[:,2,1]
-    K3[:,0,1] = R[:,1,2]*R[:,2,0]+R[:,1,0]*R[:,2,2]
-    K3[:,0,2] = R[:,1,0]*R[:,2,1]+R[:,1,1]*R[:,2,0]
-    K3[:,1,0] = R[:,2,1]*R[:,0,2]+R[:,2,2]*R[:,0,1]
-    K3[:,1,1] = R[:,2,2]*R[:,0,0]+R[:,2,0]*R[:,0,2]
-    K3[:,1,2] = R[:,2,0]*R[:,0,1]+R[:,2,1]*R[:,0,0]
-    K3[:,2,0] = R[:,0,1]*R[:,1,2]+R[:,0,2]*R[:,1,1]
-    K3[:,2,1] = R[:,0,2]*R[:,1,0]+R[:,0,0]*R[:,1,2]
-    K3[:,2,2] = R[:,0,0]*R[:,1,1]+R[:,0,1]*R[:,1,0]
-
-    K1 = 2.*K1
-    K_top = torch.cat((K0,K1),2)
-    K_bot = torch.cat((K2,K3),2)
-    K = torch.cat((K_top,K_bot),1).float()
-
-    return Voigt_to_Voigt_21(torch.matmul(torch.matmul(K,Voigt),torch.transpose(K,1,2))).float()
-
-def direct_rotate_6D_full(C,rot):
-    
-    R = rotation_6d_to_matrix(rot)
-    
-    batch_size = len(C)
-    Voigt = torch.zeros((batch_size,6,6), device=device)
-
-    Voigt[:,0,0] = C[:,0]
-    Voigt[:,0,1] = C[:,1]
-    Voigt[:,1,0] = C[:,1]
-    Voigt[:,0,2] = C[:,2]
-    Voigt[:,2,0] = C[:,2]
-    Voigt[:,0,3] = C[:,3]
-    Voigt[:,3,0] = C[:,3]
-    Voigt[:,0,4] = C[:,4]
-    Voigt[:,4,0] = C[:,4]
-    Voigt[:,0,5] = C[:,5]
-    Voigt[:,5,0] = C[:,5]
-
-    Voigt[:,1,1] = C[:,6]
-    Voigt[:,1,2] = C[:,7]
-    Voigt[:,2,1] = C[:,7]
-    Voigt[:,1,3] = C[:,8]
-    Voigt[:,3,1] = C[:,8]
-    Voigt[:,1,4] = C[:,9]
-    Voigt[:,4,1] = C[:,9]
-    Voigt[:,1,5] = C[:,10]
-    Voigt[:,5,1] = C[:,10]
-
-    Voigt[:,2,2] = C[:,11]
-    Voigt[:,2,3] = C[:,12]
-    Voigt[:,3,2] = C[:,12]
-    Voigt[:,2,4] = C[:,13]
-    Voigt[:,4,2] = C[:,13]
-    Voigt[:,2,5] = C[:,14]
-    Voigt[:,5,2] = C[:,14]
-    
-    Voigt[:,3,3] = C[:,15]
-    Voigt[:,3,4] = C[:,16]
-    Voigt[:,4,3] = C[:,16]
-    Voigt[:,3,5] = C[:,17]
-    Voigt[:,5,3] = C[:,17]
-
-    Voigt[:,4,4] = C[:,18]
-    Voigt[:,4,5] = C[:,19]
-    Voigt[:,5,4] = C[:,19]
-
-    Voigt[:,5,5] = C[:,20]
-
-    K0 = torch.mul(R,R)
-    K1 = torch.zeros((batch_size,3,3), device=device)
-    K2 = torch.zeros((batch_size,3,3), device=device)
-    K3 = torch.zeros((batch_size,3,3), device=device)
-    K = torch.zeros((batch_size,6,6), device=device)
-
-    K1[:,0,0] = R[:,0,1]*R[:,0,2]
-    K1[:,0,1] = R[:,0,2]*R[:,0,0]
-    K1[:,0,2] = R[:,0,0]*R[:,0,1]
-    K1[:,1,0] = R[:,1,1]*R[:,1,2]
-    K1[:,1,1] = R[:,1,2]*R[:,1,0]
-    K1[:,1,2] = R[:,1,0]*R[:,1,1] 
-    K1[:,2,0] = R[:,2,1]*R[:,2,2]
-    K1[:,2,1] = R[:,2,2]*R[:,2,0]
-    K1[:,2,2] = R[:,2,0]*R[:,2,1]
-
-    K2[:,0,0] = R[:,1,0]*R[:,2,0]
-    K2[:,0,1] = R[:,1,1]*R[:,2,1]
-    K2[:,0,2] = R[:,1,2]*R[:,2,2]
-    K2[:,1,0] = R[:,2,0]*R[:,0,0]
-    K2[:,1,1] = R[:,2,1]*R[:,0,1]
-    K2[:,1,2] = R[:,2,2]*R[:,0,2]
-    K2[:,2,0] = R[:,0,0]*R[:,1,0]
-    K2[:,2,1] = R[:,0,1]*R[:,1,1]
-    K2[:,2,2] = R[:,0,2]*R[:,1,2]
-
-    K3[:,0,0] = R[:,1,1]*R[:,2,2]+R[:,1,2]*R[:,2,1]
-    K3[:,0,1] = R[:,1,2]*R[:,2,0]+R[:,1,0]*R[:,2,2]
-    K3[:,0,2] = R[:,1,0]*R[:,2,1]+R[:,1,1]*R[:,2,0]
-    K3[:,1,0] = R[:,2,1]*R[:,0,2]+R[:,2,2]*R[:,0,1]
-    K3[:,1,1] = R[:,2,2]*R[:,0,0]+R[:,2,0]*R[:,0,2]
-    K3[:,1,2] = R[:,2,0]*R[:,0,1]+R[:,2,1]*R[:,0,0]
-    K3[:,2,0] = R[:,0,1]*R[:,1,2]+R[:,0,2]*R[:,1,1]
-    K3[:,2,1] = R[:,0,2]*R[:,1,0]+R[:,0,0]*R[:,1,2]
-    K3[:,2,2] = R[:,0,0]*R[:,1,1]+R[:,0,1]*R[:,1,0]
-
-    K1 = 2.*K1
     K_top = torch.cat((K0,K1),2)
     K_bot = torch.cat((K2,K3),2)
     K = torch.cat((K_top,K_bot),1).float()

@@ -48,40 +48,15 @@ def softmax(input, t):
 def gumbel(input, t):
     return F.gumbel_softmax(input, tau=t, hard=True, eps=1e-10, dim=1)
 
-def getOrthogonalStiffness(F1,F1_features,C_ort_scaling):
-    return C_ort_scaling.unnormalize(F1(F1_features))
+# def getOrthogonalStiffness(F1,F1_features,C_ort_scaling):
+#     return C_ort_scaling.unnormalize(F1(F1_features))
     
 def assemble_F2_features(C_ort,R1,V,C_ort_scaling,method=None):
     # scale C_ort to its original range to compute R1
     C_ort_unscaled = C_ort_scaling.unnormalize(C_ort)
     # rotate C_ort (directly in Voigt notation)
-    if method == '6D':
-        C_tilde = direct_rotate_6D(C_ort_unscaled, R1)
-        print('FLAG')
-    else:
-        C_tilde = direct_rotate(C_ort_unscaled, R1)
+    C_tilde = direct_rotate(C_ort_unscaled,R1,orthotropic=True,method=method)
     return torch.cat((C_tilde,V),dim=1)
-
-# def assemble_F2_features_6D(C_ort,R,V,C_ort_scaling):
-#     # scale C_ort to its original range to compute R
-#     C_ort_unscaled = C_ort_scaling.unnormalize(C_ort)
-#     # rotate C_ort (directly in Voigt notation)
-#     C_tilde = direct_rotate_6D(C_ort_unscaled, R)
-#     return torch.cat((C_tilde,V),dim=1)
-
-# def assemble_F2_features_old(F1,features,R,shear_features,C_ort_scaling):
-#     # obtain 9 orthogonal stiffness parameters from first model
-#     orthogonal_stiffness = getOrthogonalStiffness(F1,features,C_ort_scaling)
-#     # rotate orthogonal stiffness matrix using direct Voigt matrix multiplication
-#     rotated_stiffness = direct_rotate(orthogonal_stiffness, R)
-#     return torch.cat((rotated_stiffness,shear_features),dim=1)
-
-# def assemble_F2_features_6D_old(F1,features,R,shear_features,C_ort_scaling):
-#     # obtain 9 orthogonal stiffness parameters from first model
-#     orthogonal_stiffness = getOrthogonalStiffness(F1,features,C_ort_scaling)
-#     # rotate orthogonal stiffness matrix using direct Voigt matrix multiplication
-#     rotated_stiffness = direct_rotate_6D(orthogonal_stiffness, R)
-#     return torch.cat((rotated_stiffness,shear_features),dim=1)
 
 def invModel_output(G1,G2,input,t,activation):
     # continuous params: [stretch1, stretch2, stretch3, rot_stretch1, rot_stretch2, rot_stretch3, theta, rot_ax1, rot_ax2]
@@ -107,25 +82,6 @@ def invModel_output(G1,G2,input,t,activation):
 # input: normalized rotated C, output: normalized un-rotated C
 def rotate_C(C_hat,R,C_scaling,C_hat_scaling,method=None):
     temp = C_hat_scaling.unnormalize(C_hat)
-    if method == '6D':
-        temp = direct_rotate_6D_full(temp,R)
-    else:
-        temp = direct_rotate_full(temp,R)
+    temp = direct_rotate(temp,R,method=method)
     C = C_scaling.normalize(temp)
     return C
-
-# # input: normalized rotated C, output: normalized un-rotated C
-# def backrotate_C(C,R,C_scaling,C_hat_scaling):
-#     temp = C_scaling.unnormalize(C)
-#     a,b,c = torch.split(R,[1,1,1],dim=1)
-#     R = torch.cat((-a,b,c),dim=1)
-#     temp = direct_rotate_full(temp,R)
-#     C_hat = C_hat_scaling.normalize(temp)
-#     return C_hat
-
-# # input: normalized rotated C, output: normalized un-rotated C
-# def rotate_C_6D(C,R,C_scaling,C_hat_scaling):
-#     temp = C_hat_scaling.unnormalize(C)
-#     temp = direct_rotate_6D_full(temp,R)
-#     rotated_C = C_scaling.normalize(temp)
-#     return rotated_C

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import torch
 import torch.nn.functional as F
 import numpy as np
@@ -19,7 +18,7 @@ class Normalization:
     
     def normalize(self, data):
         list_index_cat = []       
-        temp = torch.zeros(data.shape,device=device)
+        temp = torch.zeros(data.shape,device=data.device)
         for i in range(0, self.cols):
             if self.dataType[i] == 'continuous':
 
@@ -52,7 +51,7 @@ class Normalization:
             elif self.dataType[i] == 'categorical':
 
                 #convert categorical features into binaries and append at the end of feature tensor
-                temp = torch.cat((data,F.one_hot(data[:,i].to(torch.int64))),dim=1)
+                temp = torch.cat((temp,F.one_hot(data[:,i].to(torch.int64))),dim=1)
                 list_index_cat = np.append(list_index_cat,i)
                                    
             else:
@@ -61,13 +60,13 @@ class Normalization:
         # neglect categorical features which have been one-hot encoded and appended at the end (there are probably more elegant ways to do this)
         j = 0
         for i in np.array(list_index_cat, dtype=np.int64):          
-            temp = torch.cat([data[:,0:i+j], data[:,i+1+j:]],dim=1)
+            temp = torch.cat([temp[:,0:i+j], temp[:,i+1+j:]],dim=1)
             j -= 1
 
         return temp
 
-    def unnormalize_notinplace(self, data):
-        temp = torch.zeros(data.shape,device=device)
+    def unnormalize(self, data):
+        temp = torch.zeros(data.shape,device=data.device)
         for i in range(0, self.cols):
             if self.dataType[i] == 'continuous':
                 
