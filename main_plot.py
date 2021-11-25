@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from lattice_utils import Topology
+# from lattice_utils import Topology
 
 ## define lattice to plot
 sample = 1
