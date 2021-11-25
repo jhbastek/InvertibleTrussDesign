@@ -5,12 +5,19 @@ from parameters import *
 from loadDataset import *
 from normalization import decodeOneHot
 from model_utils import *
-from voigt_rotation import *
 from errorAnalysis import compute_NMSE
 
 if __name__ == '__main__':
     
-    torch.manual_seed(1234)
+    ## define parameters
+    # set softmax temperature (higher value enforces larger exploration)
+    t = 100.
+    # set number of sample passes
+    passes = 200
+    # set number of stored (best) predictions
+    stored_pred = 5
+
+    # create directory
     pathlib.Path('Predictions').mkdir(exist_ok=True)
 
     ## load and preprocess data
@@ -21,9 +28,6 @@ if __name__ == '__main__':
     # Note: for test, batch_size=len(test_set) so that we load the entire test set at once
     C_target = next(iter(pred_set_loader))
     print('\n-------------------------------------')
-        
-    # set softmax temperature (for stochastic inverse prediction)
-    t = 100.
 
     ## load models
     # load F1
@@ -37,11 +41,8 @@ if __name__ == '__main__':
     G2 = torch.load("models/G2.pt",map_location=device)
     G1.eval(), G2.eval()
 
-    repetitions = 200
-    num_samples = len(C_target)
-    top_lat = 5
-
     # initialize nested lists to collect best predictions
+    num_samples = len(C_target)
     top_C_target_pred_pred = [[] for i in range(num_samples)]
     top_full_target_pred = [[] for i in range(num_samples)]
 
@@ -49,7 +50,7 @@ if __name__ == '__main__':
         C_target = C_target.to(device)
 
         # repeat target lables to generate large variety of predictions
-        C_target = C_target.repeat(1,repetitions).view(-1,21)
+        C_target = C_target.repeat(1,passes).view(-1,21)
         # inverse prediction
         rho_U_target_pred, V_target_pred, R1_target_pred, R2_target_pred, topology_target_pred = invModel_output(G1,G2,C_target,t,'gumbel')
         # assemble F1 features based on output of inverse model
@@ -71,8 +72,8 @@ if __name__ == '__main__':
         # collect lattices with lowest NMSE
         lowest_error = torch.zeros(num_samples,device=device)+1.e20
         for j in range(num_samples):
-            for i in range(repetitions):
-                cur_iter = j*repetitions + i
+            for i in range(passes):
+                cur_iter = j*passes + i
                 if (rel_error[cur_iter] < lowest_error[j]):
                     print('Identified lattice with lower NMSE.')
                     top_full_target_pred[j].append(full_target_pred[cur_iter])
@@ -80,17 +81,17 @@ if __name__ == '__main__':
                     lowest_error[j] = rel_error[cur_iter]
 
         # select the n best lattices with lowest NMSE and sort
-        selected_full_target_pred = torch.zeros((num_samples,top_lat,46+1),device=device)
+        selected_full_target_pred = torch.zeros((num_samples,stored_pred,46+1),device=device)
         for i, list in enumerate(top_full_target_pred):
-            temp = torch.stack(list[:-top_lat-1:-1])
+            temp = torch.stack(list[:-stored_pred-1:-1])
             num_predictions = temp.shape[0]
             temp = torch.cat((torch.zeros(num_predictions,1)+i+1,temp),dim=1)
             selected_full_target_pred[i,0:temp.shape[0]] = temp
 
         # select the n best lattice stiffnesses with lowest NMSE and sort
-        selected_C_target_pred_pred = torch.zeros((num_samples,top_lat,21+1),device=device)
+        selected_C_target_pred_pred = torch.zeros((num_samples,stored_pred,21+1),device=device)
         for i, list in enumerate(top_C_target_pred_pred):
-            temp = torch.stack(list[:-top_lat-1:-1])
+            temp = torch.stack(list[:-stored_pred-1:-1])
             num_predictions = temp.shape[0]
             temp = torch.cat((torch.zeros(num_predictions,1)+i+1,temp),dim=1)
             selected_C_target_pred_pred[i,0:num_predictions] = temp
@@ -122,6 +123,10 @@ if __name__ == '__main__':
         # construct full descriptor of inversely designed lattice
         full_pred = torch.cat((sample,F1_features_target_pred,R1_target_pred_angle_axis,R2_target_pred_angle_axis,V_target_pred),dim=1)
 
+        # add sample index to C_target
+        C_target = torch.unique(C_target, dim=0)
+        C_target = torch.cat((torch.unsqueeze(torch.tensor(np.arange(num_samples)+1),1),C_target),dim=1)
+
         # push tensors back to cpu
         full_pred = full_pred.cpu()
         C_target = C_target.cpu()
@@ -129,6 +134,6 @@ if __name__ == '__main__':
         
         # export tensors for post-processing
         exportTensor("Predictions/full_pred",full_pred,['sample']+all_names)
-        exportTensor("Predictions/C_target",C_target,C_names)
+        exportTensor("Predictions/C_target",C_target,['sample']+C_names)
         exportTensor("Predictions/C_target_pred_pred",selected_C_target_pred_pred,['sample']+C_names)
         print('Finished.\n')

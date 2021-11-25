@@ -3,9 +3,8 @@ import torch
 from torch.utils.data import DataLoader
 from parameters import *
 from loadDataset import *
-from normalization import decodeOneHot
 from model_utils import *
-from voigt_rotation import *
+from normalization import decodeOneHot
 from errorAnalysis import computeR2
 
 if __name__ == '__main__':

@@ -1,3 +1,4 @@
+from numpy.lib.npyio import save
 import torch
 from torch.utils.data import TensorDataset
 import numpy as np
@@ -15,14 +16,14 @@ def exportTensor(name,data,cols, header=True):
     if(header):
         df.columns = cols
     print(name)
-    df.to_csv(name+".csv",header=header)
+    df.to_csv(name+".csv", header=header, index=False)
 
 def exportList(name,data):
     #export torch.tensor to pickle
     arr=np.array(data)
     np.savetxt(name+".csv", [arr], delimiter=',')
 
-def getNormalization():
+def getNormalization(save_normalization=False):
     
     ######################################################    
     data = pd.read_csv(dataPath,nrows=1000)
@@ -47,17 +48,18 @@ def getNormalization():
     C_scaling = Normalization(C,C_types,C_scaling_strategy)
     C_hat_scaling = Normalization(unrotatedlabelTensor,C_types,C_hat_scaling_strategy)
 
-    # TODO: remove this at the end
-    with open('normalization/F1_features_scaling.pickle', 'wb') as file_:
-        pickle.dump(F1_features_scaling, file_, -1)
-    with open('normalization/V_scaling.pickle', 'wb') as file_:
-        pickle.dump(V_scaling, file_, -1)
-    with open('normalization/C_ort_scaling.pickle', 'wb') as file_:
-        pickle.dump(C_ort_scaling, file_, -1)
-    with open('normalization/C_scaling.pickle', 'wb') as file_:
-        pickle.dump(C_scaling, file_, -1)
-    with open('normalization/C_hat_scaling.pickle', 'wb') as file_:
-        pickle.dump(C_hat_scaling, file_, -1)
+    # should only be activated if framework is fully retrained
+    if save_normalization:
+        with open('normalization/F1_features_scaling.pickle', 'wb') as file_:
+            pickle.dump(F1_features_scaling, file_, -1)
+        with open('normalization/V_scaling.pickle', 'wb') as file_:
+            pickle.dump(V_scaling, file_, -1)
+        with open('normalization/C_ort_scaling.pickle', 'wb') as file_:
+            pickle.dump(C_ort_scaling, file_, -1)
+        with open('normalization/C_scaling.pickle', 'wb') as file_:
+            pickle.dump(C_scaling, file_, -1)
+        with open('normalization/C_hat_scaling.pickle', 'wb') as file_:
+            pickle.dump(C_hat_scaling, file_, -1)
 
     return F1_features_scaling, C_ort_scaling, C_scaling, V_scaling, C_hat_scaling
 

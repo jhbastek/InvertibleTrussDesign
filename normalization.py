@@ -11,7 +11,6 @@ class Normalization:
         self.max = torch.max(data,dim=0)[0]
         self.globalmin = torch.min(data)
         self.globalmax = torch.max(data)
-        self.diff = self.max - self.min
         self.dataType = dataType
         self.cols = data.size()[1]
         self.strategy = strategy
@@ -106,11 +105,11 @@ def decodeOneHot(data):
     types = torch.stack((type1,type2,type3),dim=1)
     reps = torch.stack((rep1,rep2,rep3),dim=1)
 
-    # sort by lattices 
+    # sort by lattice number
     sorted_types, indices = torch.sort(types)
     sorted_reps = smart_sort(reps, indices)
 
-    # sort by repetitions if lattices are equal
+    # sort by repetitions if lattice numbers are equal
     for i in range(data.size()[0]):
         if sorted_types[i,0] == sorted_types[i,1] and sorted_types[i,1] == sorted_types[i,2]:
             sorted_reps[i,:] = torch.sort(sorted_reps[i,:])[0]
