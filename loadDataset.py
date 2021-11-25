@@ -6,6 +6,7 @@ from parameters import *
 from normalization import Normalization
 from voigt_rotation import *
 import pickle
+from model_utils import CPU_Unpickler
 
 #################################################     
 def exportTensor(name,data,cols, header=True):
@@ -16,15 +17,6 @@ def exportTensor(name,data,cols, header=True):
     print(name)
     df.to_csv(name+".csv",header=header)
 
-def exportTensor_rem_dupl(name,data,cols, header=True):
-    #export torch.tensor to pickle
-    df=pd.DataFrame.from_records(data.detach().numpy())
-    if(header):
-        df.columns = cols
-    print(name)
-    df.drop_duplicates(subset=['relative_density'], inplace=True)
-    df.to_csv(name+".csv",header=header)
-
 def exportList(name,data):
     #export torch.tensor to pickle
     arr=np.array(data)
@@ -33,7 +25,7 @@ def exportList(name,data):
 def getNormalization():
     
     ######################################################    
-    data = pd.read_csv(dataPath,nrows=3000000)
+    data = pd.read_csv(dataPath,nrows=1000)
     # check for NaNs 
     assert not data.isnull().values.any()
     
@@ -72,18 +64,18 @@ def getNormalization():
 def getSavedNormalization():
     
     ######################################################    
-    F1_features_scaling = pickle.load(open("normalization/F1_features_scaling.pickle", "rb", -1))
-    V_scaling = pickle.load(open("normalization/V_scaling.pickle", "rb", -1))
-    C_ort_scaling = pickle.load(open("normalization/C_ort_scaling.pickle", "rb", -1))
-    C_scaling = pickle.load(open("normalization/C_scaling.pickle", "rb", -1))
-    C_hat_scaling = pickle.load(open("normalization/C_hat_scaling.pickle", "rb", -1))
+    F1_features_scaling = CPU_Unpickler(open("normalization/F1_features_scaling.pickle", "rb", -1)).load()
+    V_scaling = CPU_Unpickler(open("normalization/V_scaling.pickle", "rb", -1)).load()
+    C_ort_scaling = CPU_Unpickler(open("normalization/C_ort_scaling.pickle", "rb", -1)).load()
+    C_scaling = CPU_Unpickler(open("normalization/C_scaling.pickle", "rb", -1)).load()
+    C_hat_scaling = CPU_Unpickler(open("normalization/C_hat_scaling.pickle", "rb", -1)).load()
 
     return F1_features_scaling, C_ort_scaling, C_scaling, V_scaling, C_hat_scaling
 
 def getDataset(F1_features_scaling, V_scaling, C_ort_scaling, C_scaling):
     
     ######################################################    
-    data = pd.read_csv(dataPath,nrows=3000000)
+    data = pd.read_csv(dataPath,nrows=1000)
     
     print('Data: ',data.shape)       
     # check for NaNs 
@@ -112,10 +104,10 @@ def getDataset(F1_features_scaling, V_scaling, C_ort_scaling, C_scaling):
 
     return train_set, test_set
 
-def getDataset_bones(data_samples_reduced, C_scaling):
+def getDataset_pred(C_scaling):
     
     ######################################################    
-    data = pd.read_csv(dataPath_bones, nrows=data_samples_reduced)
+    data = pd.read_csv(dataPath, nrows = 3)
     
     print('Data: ',data.shape)       
     # check for NaNs 

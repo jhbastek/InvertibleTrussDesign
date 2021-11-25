@@ -2,6 +2,14 @@ import torch
 import torch.nn.functional as F
 from parameters import *
 from voigt_rotation import *
+import pickle, io
+
+# unpickle object also with a CPU-only machine, see issue: https://github.com/pytorch/pytorch/issues/16797
+class CPU_Unpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == 'torch.storage' and name == '_load_from_bytes':
+            return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
+        else: return super().find_class(module, name)
 
 def getActivation(activ):
     if(activ == 'relu'):

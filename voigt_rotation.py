@@ -86,7 +86,7 @@ def rotation_6d_to_matrix(d6: torch.Tensor) -> torch.Tensor:
     b3 = torch.cross(b1, b2, dim=-1)
     return torch.stack((b1, b2, b3), dim=-2)
 
-def rotation_6d_to_angleaxis(rot_6d):
+def rot6DToAngleAxis(rot_6d):
     rot_matrix = rotation_6d_to_matrix(rot_6d)
     x = rot_matrix[:,1,2]-rot_matrix[:,2,1]
     y = rot_matrix[:,2,0]-rot_matrix[:,0,2]

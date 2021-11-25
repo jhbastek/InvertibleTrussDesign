@@ -1,4 +1,3 @@
-import pathlib
 import torch
 from torch.utils.data import DataLoader
 from parameters import *
@@ -11,7 +10,6 @@ from errorAnalysis import compute_NMSE
 if __name__ == '__main__':
     
     torch.manual_seed(1234)
-    pathlib.Path('Predictions').mkdir(exist_ok=True)
 
     ## load and preprocess data
     # load normalization (based on training dataset)
@@ -68,26 +66,16 @@ if __name__ == '__main__':
         C_target_pred_pred = C_scaling.unnormalize(C_target_pred_pred)
         rel_error = compute_NMSE(C_target,C_target_pred_pred)
 
-        # collect lattices with lowest NMSE
         lowest_error = torch.zeros(num_samples,device=device)+1.e20
         for j in range(num_samples):
             for i in range(repetitions):
                 cur_iter = j*repetitions + i
                 if (rel_error[cur_iter] < lowest_error[j]):
                     print('Identified lattice with lower NMSE.')
-                    top_full_target_pred[j].append(full_target_pred[cur_iter])
                     top_C_target_pred_pred[j].append(C_target_pred_pred[cur_iter])
+                    top_full_target_pred[j].append(full_target_pred[cur_iter])
                     lowest_error[j] = rel_error[cur_iter]
 
-        # select the n best lattices with lowest NMSE and sort
-        selected_full_target_pred = torch.zeros((num_samples,top_lat,46+1),device=device)
-        for i, list in enumerate(top_full_target_pred):
-            temp = torch.stack(list[:-top_lat-1:-1])
-            num_predictions = temp.shape[0]
-            temp = torch.cat((torch.zeros(num_predictions,1)+i+1,temp),dim=1)
-            selected_full_target_pred[i,0:temp.shape[0]] = temp
-
-        # select the n best lattice stiffnesses with lowest NMSE and sort
         selected_C_target_pred_pred = torch.zeros((num_samples,top_lat,21+1),device=device)
         for i, list in enumerate(top_C_target_pred_pred):
             temp = torch.stack(list[:-top_lat-1:-1])
@@ -95,11 +83,19 @@ if __name__ == '__main__':
             temp = torch.cat((torch.zeros(num_predictions,1)+i+1,temp),dim=1)
             selected_C_target_pred_pred[i,0:num_predictions] = temp
 
-        # flatten and delete zero-rows
-        selected_full_target_pred = torch.flatten(selected_full_target_pred,end_dim=1)
-        selected_full_target_pred = selected_full_target_pred[selected_full_target_pred[:,0]!=0]
+        selected_full_target_pred = torch.zeros((num_samples,top_lat,46+1),device=device)
+        for i, list in enumerate(top_full_target_pred):
+            temp = torch.stack(list[:-top_lat-1:-1])
+            num_predictions = temp.shape[0]
+            temp = torch.cat((torch.zeros(num_predictions,1)+i+1,temp),dim=1)
+            selected_full_target_pred[i,0:temp.shape[0]] = temp
+
         selected_C_target_pred_pred = torch.flatten(selected_C_target_pred_pred,end_dim=1)
+        selected_full_target_pred = torch.flatten(selected_full_target_pred,end_dim=1)
+
+        # delete zero-rows
         selected_C_target_pred_pred = selected_C_target_pred_pred[selected_C_target_pred_pred[:,0]!=0]
+        selected_full_target_pred = selected_full_target_pred[selected_full_target_pred[:,0]!=0]
 
         ## export for post-processing
         print('\nExporting:')

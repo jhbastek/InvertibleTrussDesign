@@ -43,13 +43,12 @@ class Normalization:
                     temp[:,i] = torch.div(data[:,i]-self.mu[i], self.std[i])
 
                 elif (self.strategy == 'none'):
-                    pass
+                    temp[:,i] = data[:,i]
 
                 else:
                     raise ValueError('Incorrect normalization strategy')
 
             elif self.dataType[i] == 'categorical':
-
                 #convert categorical features into binaries and append at the end of feature tensor
                 temp = torch.cat((temp,F.one_hot(data[:,i].to(torch.int64))),dim=1)
                 list_index_cat = np.append(list_index_cat,i)
@@ -86,13 +85,14 @@ class Normalization:
                     temp[:,i] = torch.mul(data[:,i], self.std[i]) + self.mu[i]
 
                 elif (self.strategy == 'none'):
-                    pass
+                    temp[:,i] = data[:,i]
 
                 else:
                     raise ValueError('Incorrect normalization strategy')
                 
             elif self.dataType[i] == 'categorical':
-                pass
+                temp[:,i] = data[:,i]
+
             else:
                 raise ValueError("Data type must be either continuous or categorical")
         return temp
@@ -130,6 +130,3 @@ def smart_sort(x, permutation):
         permutation.flatten()
     ].view(d1, d2)
     return ret
-
-# TODO write function that returns connectivity, maybe use new header.
-# Maybe I can re-use my Matlab code?

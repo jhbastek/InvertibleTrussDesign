@@ -9,13 +9,13 @@ dataPath_bones = 'data/lumpe_data_1k.csv'
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
+#TODO: sort all names as given in the paper!
 # define colum names from data
-R1_names = ['R1_theta','R1_rot_ax1','R1_rot_ax2']
-R2_names = ['R2_theta','R2_rot_ax1','R2_rot_ax2']
-V_names = ['V1','V2','V3']
 F1_features_names = ['relative_density','U1','U2','U3','lattice_type1','lattice_type2','lattice_type3','lattice_rep1','lattice_rep2','lattice_rep3']
+R1_names = ['R1_theta','R1_rot_ax1','R1_rot_ax2']
+V_names = ['V1','V2','V3']
+R2_names = ['R2_theta','R2_rot_ax1','R2_rot_ax2']
 all_names = F1_features_names + R1_names + R2_names + V_names
-F1_features_names_onehot = ['relative_density','U1','U2','U3','lattice_type1','lattice_type1','lattice_type1','lattice_type2','lattice_type2','lattice_type2','lattice_type3','lattice_type3','lattice_type3','lattice_rep1','lattice_rep1','lattice_rep1','lattice_rep1','lattice_rep2','lattice_rep2','lattice_rep2','lattice_rep2','lattice_rep3','lattice_rep3','lattice_rep3','lattice_rep3']
 C_ort_names = ['C11_ort','C12_ort','C13_ort','C22_ort','C23_ort','C33_ort','C44_ort','C55_ort','C66_ort']
 C_names = ['C11','C12','C13','C14','C15','C16','C22','C23','C24','C25','C26','C33','C34','C35','C36','C44','C45','C46','C55','C56','C66']
 
