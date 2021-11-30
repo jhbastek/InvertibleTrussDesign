@@ -1,4 +1,5 @@
 from math import *
+import numpy as np
 import torch
 import torch.nn.functional as F
 from parameters import *
@@ -60,7 +61,22 @@ def get_rotation_matrix(theta, n1, n2):
     r[:,1,2] = n2*n3*(1.-torch.cos(theta)) - n1*torch.sin(theta)
     r[:,2,0] = n3*n1*(1.-torch.cos(theta)) - n2*torch.sin(theta)
     r[:,2,1] = n3*n2*(1.-torch.cos(theta)) + n1*torch.sin(theta)
-    r[:,2,2] = torch.square(n3)*(1-torch.cos(theta)) + torch.cos(theta)
+    r[:,2,2] = torch.square(n3)*(1.-torch.cos(theta)) + torch.cos(theta)
+    return r
+
+def get_rotation_matrix_np(theta, n1, n2):
+    eps = 2e-6 # important to ensure n3-sqrt is not negative
+    r = np.zeros((3,3))
+    n3 = np.sqrt(1. - np.square(n1) - np.square(n2) + eps)
+    r[0,0] = np.square(n1)*(1-np.cos(theta)) + np.cos(theta)
+    r[0,1] = n1*n2*(1.-np.cos(theta)) - n3*np.sin(theta)
+    r[0,2] = n1*n3*(1.-np.cos(theta)) + n2*np.sin(theta)
+    r[1,0] = n2*n1*(1.-np.cos(theta)) + n3*np.sin(theta)
+    r[1,1] = np.square(n2)*(1-np.cos(theta)) + np.cos(theta)
+    r[1,2] = n2*n3*(1.-np.cos(theta)) - n1*np.sin(theta)
+    r[2,0] = n3*n1*(1.-np.cos(theta)) - n2*np.sin(theta)
+    r[2,1] = n3*n2*(1.-np.cos(theta)) + n1*np.sin(theta)
+    r[2,2] = np.square(n3)*(1.-np.cos(theta)) + np.cos(theta)
     return r
 
 def rotation_6d_to_matrix(d6: torch.Tensor) -> torch.Tensor:

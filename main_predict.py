@@ -18,7 +18,7 @@ if __name__ == '__main__':
     stored_pred = 5
 
     # create directory
-    pathlib.Path('Predictions').mkdir(exist_ok=True)
+    pathlib.Path('predictions').mkdir(exist_ok=True)
 
     ## load and preprocess data
     # load normalization (based on training dataset)

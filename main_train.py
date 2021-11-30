@@ -13,8 +13,8 @@ if __name__ == '__main__':
     
     # create directories
     pathlib.Path('models').mkdir(exist_ok=True)
-    pathlib.Path('Training').mkdir(exist_ok=True)
-    pathlib.Path('Training/history').mkdir(exist_ok=True)
+    pathlib.Path('training').mkdir(exist_ok=True)
+    pathlib.Path('training/history').mkdir(exist_ok=True)
 
     # Load and preprocess data
     F1_features_scaling, C_ort_scaling, C_scaling, V_scaling, C_hat_scaling = getNormalization()
@@ -187,17 +187,18 @@ if __name__ == '__main__':
     ## testing
     with torch.no_grad():
         F1_features_test, R1_test, R2_test, C_ort_test, C_test, V_test = F1_features_test.to(device), R1_test.to(device), R2_test.to(device), C_ort_test.to(device), C_test.to(device), V_test.to(device)
-        # inverse prediction
-        rho_U_test_pred, V_test_pred, R1_test_pred, R2_test_pred, topology_test_pred = invModel_output(G1,G2,C_test,t,'gumbel')
-        # assemble F1 features based on output of inverse model
-        F1_features_test_pred = torch.cat((rho_U_test_pred, topology_test_pred), dim=1)
 
         # forward prediction based on given lattice
         C_ort_test_pred = F1(F1_features_test)
         F2_features_test_pred = assemble_F2_features(C_ort_test_pred,R1_test,V_test,C_ort_scaling)
         C_hat_test_pred = F2(F2_features_test_pred)
         C_test_pred = rotate_C(C_hat_test_pred, R2_test, C_hat_scaling, C_scaling)
-        
+
+        # inverse prediction
+        rho_U_test_pred, V_test_pred, R1_test_pred, R2_test_pred, topology_test_pred = invModel_output(G1,G2,C_test,t,'gumbel')
+        # assemble F1 features based on output of inverse model
+        F1_features_test_pred = torch.cat((rho_U_test_pred, topology_test_pred), dim=1)
+
         # forward prediction based on inversely designed lattice
         C_ort_test_pred_pred = F1(F1_features_test_pred)
         F2_features_test_pred_pred = assemble_F2_features(C_ort_test_pred_pred,R1_test_pred,V_test_pred,C_ort_scaling,method='6D')

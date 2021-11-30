@@ -4,7 +4,7 @@ import torch
 dataPath = 'data/enhanced_topologies_2nd_rot_uniform.csv'
 # dataPath = 'data/enhanced_topologies_2nd_rot_uniform_v1.csv'
 
-# dataPath_bones = 'data/bone_data_1k.csv'
+# prediction data
 dataPath_bones = 'data/lumpe_data_1k.csv'
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')

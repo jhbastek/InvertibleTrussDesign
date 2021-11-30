@@ -11,7 +11,6 @@ from model_utils import CPU_Unpickler
 
 #################################################     
 def exportTensor(name,data,cols, header=True):
-    #export torch.tensor to pickle
     df=pd.DataFrame.from_records(data.detach().numpy())
     if(header):
         df.columns = cols
@@ -19,7 +18,6 @@ def exportTensor(name,data,cols, header=True):
     df.to_csv(name+".csv", header=header, index=False)
 
 def exportList(name,data):
-    #export torch.tensor to pickle
     arr=np.array(data)
     np.savetxt(name+".csv", [arr], delimiter=',')
 
@@ -48,7 +46,7 @@ def getNormalization(save_normalization=False):
     C_scaling = Normalization(C,C_types,C_scaling_strategy)
     C_hat_scaling = Normalization(unrotatedlabelTensor,C_types,C_hat_scaling_strategy)
 
-    # should only be activated if framework is fully retrained
+    # should only be activated if framework is retrained with different dataset
     if save_normalization:
         with open('normalization/F1_features_scaling.pickle', 'wb') as file_:
             pickle.dump(F1_features_scaling, file_, -1)
@@ -81,7 +79,7 @@ def getDataset(F1_features_scaling, V_scaling, C_ort_scaling, C_scaling):
     
     print('Data: ',data.shape)       
     # check for NaNs 
-    # assert not data.isnull().values.any()
+    assert not data.isnull().values.any()
     
     ##############---INIT TENSORS---##############
     F1_features = torch.tensor(data[F1_features_names].values)
@@ -113,12 +111,12 @@ def getDataset_pred(C_scaling):
     
     print('Data: ',data.shape)       
     # check for NaNs 
-    # assert not data.isnull().values.any()
+    assert not data.isnull().values.any()
     
     ##############---INIT TENSORS---##############
     C = torch.tensor(data[C_names].values)#, device=device)
     # C = torch.div(C,114)
-    C = torch.mul(C,20)
+    # C = torch.mul(C,20)
 
     ##############---INIT NORMALIZATION---##############
     C = C_scaling.normalize(C)
