@@ -99,7 +99,7 @@ class Normalization:
 # convert one-hot representation back to categorical integers
 def decodeOneHot(data):
     type1,type2,type3,rep1,rep2,rep3 = torch.split(data,[7,7,7,2,2,2],dim=1)
-    # we increment the repition to convert from binary to [1,2] as defined in the publication
+    # we increment the repetition to convert from binary to [1,2] as defined in the publication
     type1,type2,type3,rep1,rep2,rep3 = torch.argmax(type1, dim=1),torch.argmax(type2,dim=1),torch.argmax(type3,dim=1),torch.argmax(rep1,dim=1)+1,torch.argmax(rep2,dim=1)+1,torch.argmax(rep3, dim=1)+1
 
     types = torch.stack((type1,type2,type3),dim=1)
