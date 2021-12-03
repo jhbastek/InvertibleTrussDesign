@@ -1,4 +1,3 @@
-from numpy.lib.npyio import save
 import torch
 from torch.utils.data import TensorDataset
 import numpy as np
@@ -107,7 +106,7 @@ def getDataset(F1_features_scaling, V_scaling, C_ort_scaling, C_scaling):
 def getDataset_pred(C_scaling):
     
     ######################################################    
-    data = pd.read_csv(dataPath, nrows = 3)
+    data = pd.read_csv(dataPath_pred)
     
     print('Data: ',data.shape)       
     # check for NaNs 

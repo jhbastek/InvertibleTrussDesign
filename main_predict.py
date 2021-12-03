@@ -48,7 +48,6 @@ if __name__ == '__main__':
 
     with torch.no_grad():
         C_target = C_target.to(device)
-
         # repeat target lables to generate large variety of predictions
         C_target = C_target.repeat(1,passes).view(-1,21)
         # inverse prediction
@@ -60,15 +59,12 @@ if __name__ == '__main__':
         F2_features_target_pred_pred = assemble_F2_features(C_ort_target_pred_pred,R1_target_pred,V_target_pred,C_ort_scaling,method='6D')
         C_hat_target_pred_pred = F2(F2_features_target_pred_pred)
         C_target_pred_pred = rotate_C(C_hat_target_pred_pred, R2_target_pred, C_hat_scaling, C_scaling,method='6D')
-
         # assemble full descriptor
         full_target_pred = torch.cat((F1_features_target_pred,R1_target_pred,R2_target_pred,V_target_pred),dim=1)
-
         # scale stiffness to original range and compute NMSE
         C_target = C_scaling.unnormalize(C_target)
         C_target_pred_pred = C_scaling.unnormalize(C_target_pred_pred)
         rel_error = compute_NMSE(C_target,C_target_pred_pred)
-
         # collect lattices with lowest NMSE
         lowest_error = torch.zeros(num_samples,device=device)+1.e20
         for j in range(num_samples):
@@ -88,7 +84,7 @@ if __name__ == '__main__':
             temp = torch.cat((torch.zeros(num_predictions,1)+i+1,temp),dim=1)
             selected_full_target_pred[i,0:temp.shape[0]] = temp
 
-        # select the n best lattice stiffnesses with lowest NMSE and sort
+        # select the n best lattice stiffnesses corresponding to the best designs
         selected_C_target_pred_pred = torch.zeros((num_samples,stored_pred,21+1),device=device)
         for i, list in enumerate(top_C_target_pred_pred):
             temp = torch.stack(list[:-stored_pred-1:-1])

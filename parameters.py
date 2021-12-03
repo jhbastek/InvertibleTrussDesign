@@ -1,15 +1,12 @@
 import torch
 
-# full data
+# training data
 dataPath = 'data/enhanced_topologies_2nd_rot_uniform.csv'
-# dataPath = 'data/enhanced_topologies_2nd_rot_uniform_v1.csv'
-
 # prediction data
-dataPath_bones = 'data/lumpe_data_1k.csv'
+dataPath_pred = 'data/lumpe_data_1k.csv'
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-#TODO: sort all names as given in the paper!
 # define colum names from data
 F1_features_names = ['relative_density','U1','U2','U3','lattice_type1','lattice_type2','lattice_type3','lattice_rep1','lattice_rep2','lattice_rep3']
 R1_names = ['R1_theta','R1_rot_ax1','R1_rot_ax2']
