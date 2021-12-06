@@ -2,10 +2,10 @@ import pathlib
 import torch
 from torch.utils.data import DataLoader
 from train_parameters import *
-from loadDataset import *
-from normalization import decodeOneHot
-from model_utils import *
-from errorAnalysis import compute_NMSE
+from src.loadDataset import *
+from src.normalization import decodeOneHot
+from src.model_utils import *
+from src.errorAnalysis import compute_NMSE
 
 if __name__ == '__main__':
     
@@ -13,21 +13,22 @@ if __name__ == '__main__':
     # set Young's modulus of base material
     E = 114.
     # set softmax temperature (higher value enforces larger exploration)
-    t = 100.
+    t = 200.
     # set number of resamplings (higher number might find better predictions)
-    passes = 200
+    passes = 10000
     # set number of stored predictions (with the lowest NMSE)
     stored_pred = 5
 
     # prediction data path
-    dataPath_pred = 'data/pred_data.csv'
-    # create directory
-    pathlib.Path('predictions').mkdir(exist_ok=True)
+    # consider, e.g., bone samples from Colabella et al., 2017. 'Mimetization of the elastic properties of cancellous bone via a parameterized cellular material'
+    dataPath_pred = 'data/prediction.csv'
+    # create directory to store predicted lattices
+    pathlib.Path('prediction').mkdir(exist_ok=True)
 
     ## load and preprocess data
     # load normalization (based on training dataset)
     F1_features_scaling, C_ort_scaling, C_scaling, V_scaling, C_hat_scaling = getSavedNormalization()
-    pred_set = getDataset_pred(C_scaling)
+    pred_set = getDataset_pred(C_scaling,E,dataPath_pred)
     pred_set_loader = DataLoader(dataset=pred_set, num_workers=numWorkers, batch_size=len(pred_set))
     # Note: for test, batch_size=len(test_set) so that we load the entire test set at once
     C_target = next(iter(pred_set_loader))
@@ -49,10 +50,10 @@ if __name__ == '__main__':
     top_C_target_pred_pred = [[] for i in range(num_samples)]
     top_full_target_pred = [[] for i in range(num_samples)]
 
+    print('\n-------------------------------------\nPredict inverse designs:')
+
     with torch.no_grad():
         C_target = C_target.to(device)
-        # normalize stiffness by Young's modulus of base material
-        C_target /= E
         # repeat target lables to generate large variety of predictions
         C_target = C_target.repeat(1,passes).view(-1,21)
         # inverse prediction
@@ -80,6 +81,7 @@ if __name__ == '__main__':
                     top_full_target_pred[j].append(full_target_pred[cur_iter])
                     top_C_target_pred_pred[j].append(C_target_pred_pred[cur_iter])
                     lowest_error[j] = rel_error[cur_iter]
+        print('Finished.')
 
         # select the n best lattices with lowest NMSE and sort
         selected_full_target_pred = torch.zeros((num_samples,stored_pred,46+1),device=device)
@@ -104,7 +106,7 @@ if __name__ == '__main__':
         selected_C_target_pred_pred = selected_C_target_pred_pred[selected_C_target_pred_pred[:,0]!=0]
 
         ## export for post-processing
-        print('\nExporting:')
+        print('\n-------------------------------------\nExport predictions to:')
 
         # split prediction into subparts to rescale them to original range
         sample, rho_U_target_pred, topology_target_pred, R1_target_pred, R2_target_pred, V_target_pred = torch.split(selected_full_target_pred, [1,4,27,6,6,3], dim=1)
@@ -125,12 +127,12 @@ if __name__ == '__main__':
         full_pred = torch.cat((sample,F1_features_target_pred,R1_target_pred_angle_axis,R2_target_pred_angle_axis,V_target_pred),dim=1)
 
         # add sample index to C_target
-        C_target = torch.unique(C_target, dim=0)
+        C_target = torch.unique_consecutive(C_target, dim=0)
         C_target = torch.cat((torch.unsqueeze(torch.tensor(np.arange(num_samples)+1),1),C_target),dim=1)
 
         # unnormalize stiffness by Young's modulus of base material
-        C_target *= E
-        selected_C_target_pred_pred *= E
+        C_target[:,1:] *= E
+        selected_C_target_pred_pred[:,1:] *= E
 
         # push tensors back to cpu
         full_pred = full_pred.cpu()
@@ -138,7 +140,6 @@ if __name__ == '__main__':
         selected_C_target_pred_pred = selected_C_target_pred_pred.cpu()
         
         # export tensors for post-processing
-        exportTensor("Predictions/full_pred",full_pred,['sample']+all_names)
-        exportTensor("Predictions/C_target",C_target,['sample']+C_names)
-        exportTensor("Predictions/C_target_pred_pred",selected_C_target_pred_pred,['sample']+C_names)
-        print('Finished.')
+        exportTensor('prediction/full_pred',full_pred,['sample']+all_names)
+        exportTensor('prediction/C_target',C_target,['sample']+C_names)
+        exportTensor('prediction/C_target_pred_pred',selected_C_target_pred_pred,['sample']+C_names)

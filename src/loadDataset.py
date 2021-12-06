@@ -1,12 +1,12 @@
 import torch
 from torch.utils.data import TensorDataset
+import pickle
 import numpy as np
 import pandas as pd
 from train_parameters import *
-from normalization import Normalization
-from voigt_rotation import *
-import pickle
-from model_utils import CPU_Unpickler
+from src.normalization import Normalization
+from src.voigt_rotation import *
+from src.model_utils import CPU_Unpickler
   
 def exportTensor(name,data,cols, header=True):
     df=pd.DataFrame.from_records(data.detach().numpy())
@@ -21,7 +21,7 @@ def exportList(name,data):
 
 def getNormalization(save_normalization=False):
     
-    data = pd.read_csv(dataPath,nrows=1000)
+    data = pd.read_csv(dataPath)
     # check for NaNs 
     assert not data.isnull().values.any()
     
@@ -43,30 +43,30 @@ def getNormalization(save_normalization=False):
 
     # should only be activated if framework is retrained with different dataset
     if save_normalization:
-        with open('normalization/F1_features_scaling.pickle', 'wb') as file_:
+        with open('src/normalization/F1_features_scaling.pickle', 'wb') as file_:
             pickle.dump(F1_features_scaling, file_, -1)
-        with open('normalization/V_scaling.pickle', 'wb') as file_:
+        with open('src/normalization/V_scaling.pickle', 'wb') as file_:
             pickle.dump(V_scaling, file_, -1)
-        with open('normalization/C_ort_scaling.pickle', 'wb') as file_:
+        with open('src/normalization/C_ort_scaling.pickle', 'wb') as file_:
             pickle.dump(C_ort_scaling, file_, -1)
-        with open('normalization/C_scaling.pickle', 'wb') as file_:
+        with open('src/normalization/C_scaling.pickle', 'wb') as file_:
             pickle.dump(C_scaling, file_, -1)
-        with open('normalization/C_hat_scaling.pickle', 'wb') as file_:
+        with open('src/normalization/C_hat_scaling.pickle', 'wb') as file_:
             pickle.dump(C_hat_scaling, file_, -1)
     return F1_features_scaling, C_ort_scaling, C_scaling, V_scaling, C_hat_scaling
 
 def getSavedNormalization():
        
-    F1_features_scaling = CPU_Unpickler(open("normalization/F1_features_scaling.pickle", "rb", -1)).load()
-    V_scaling = CPU_Unpickler(open("normalization/V_scaling.pickle", "rb", -1)).load()
-    C_ort_scaling = CPU_Unpickler(open("normalization/C_ort_scaling.pickle", "rb", -1)).load()
-    C_scaling = CPU_Unpickler(open("normalization/C_scaling.pickle", "rb", -1)).load()
-    C_hat_scaling = CPU_Unpickler(open("normalization/C_hat_scaling.pickle", "rb", -1)).load()
+    F1_features_scaling = CPU_Unpickler(open("src/normalization/F1_features_scaling.pickle", "rb", -1)).load()
+    V_scaling = CPU_Unpickler(open("src/normalization/V_scaling.pickle", "rb", -1)).load()
+    C_ort_scaling = CPU_Unpickler(open("src/normalization/C_ort_scaling.pickle", "rb", -1)).load()
+    C_scaling = CPU_Unpickler(open("src/normalization/C_scaling.pickle", "rb", -1)).load()
+    C_hat_scaling = CPU_Unpickler(open("src/normalization/C_hat_scaling.pickle", "rb", -1)).load()
     return F1_features_scaling, C_ort_scaling, C_scaling, V_scaling, C_hat_scaling
 
 def getDataset(F1_features_scaling, V_scaling, C_ort_scaling, C_scaling):
       
-    data = pd.read_csv(dataPath,nrows=1000)
+    data = pd.read_csv(dataPath)
     
     print('Data: ',data.shape)       
     # check for NaNs 
@@ -91,7 +91,7 @@ def getDataset(F1_features_scaling, V_scaling, C_ort_scaling, C_scaling):
     train_set, test_set = torch.utils.data.random_split(dataset, [l1,l2], generator=torch.Generator().manual_seed(42))
     return train_set, test_set
 
-def getDataset_pred(C_scaling):
+def getDataset_pred(C_scaling,E,dataPath_pred):
     
     data = pd.read_csv(dataPath_pred)
     
@@ -100,6 +100,8 @@ def getDataset_pred(C_scaling):
     assert not data.isnull().values.any()
     
     C = torch.tensor(data[C_names].values)
+    # normalize stiffness by Young's modulus of base material
+    C = torch.div(C,E)
     C = C_scaling.normalize(C)
     dataset =  C.float()
     return dataset

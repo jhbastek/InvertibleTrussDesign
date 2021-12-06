@@ -3,7 +3,7 @@ import torch
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # training data path
-dataPath = 'data/training_data.csv'
+dataPath = 'data/training.csv'
 
 # define column names from data
 F1_features_names = ['relative_density','U1','U2','U3','lattice_type1','lattice_type2','lattice_type3','lattice_rep1','lattice_rep2','lattice_rep3']

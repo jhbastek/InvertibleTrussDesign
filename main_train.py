@@ -2,10 +2,10 @@ import pathlib
 import torch
 from torch.utils.data import DataLoader
 from train_parameters import *
-from loadDataset import *
-from model_utils import *
-from normalization import decodeOneHot
-from errorAnalysis import computeR2
+from src.loadDataset import *
+from src.model_utils import *
+from src.normalization import decodeOneHot
+from src.errorAnalysis import computeR2
 
 if __name__ == '__main__':
     
@@ -16,8 +16,8 @@ if __name__ == '__main__':
     pathlib.Path('training').mkdir(exist_ok=True)
     pathlib.Path('training/history').mkdir(exist_ok=True)
 
-    # Load and preprocess data
-    F1_features_scaling, C_ort_scaling, C_scaling, V_scaling, C_hat_scaling = getNormalization()
+    # load and preprocess data
+    F1_features_scaling, C_ort_scaling, C_scaling, V_scaling, C_hat_scaling = getNormalization(True)
     train_set, test_set = getDataset(F1_features_scaling, V_scaling, C_ort_scaling, C_scaling)
     train_data_loader = DataLoader(dataset=train_set, num_workers=numWorkers, batch_size=batchSize)
     test_data_loader = DataLoader(dataset=test_set, num_workers=numWorkers, batch_size=len(test_set))
@@ -208,11 +208,11 @@ if __name__ == '__main__':
         # compute R2 values
         print('\nR2 values:\n--------------------------------------------')
         F1ComponentR2 = computeR2(C_ort_test_pred, C_ort_test)
-        print('F1 test C R2:',F1ComponentR2,'\n')
+        print('F1 test stiffness (R2):',F1ComponentR2,'\n')
         F2ComponentR2Y = computeR2(C_test_pred, C_test)
-        print('F2 test C R2:',F2ComponentR2Y,'\n')
+        print('F2 test stiffness (R2):',F2ComponentR2Y,'\n')
         invComponentR2Y = computeR2(C_test_pred_pred, C_test)
-        print('Inverse test reconstruction C R2:',invComponentR2Y,'\n')
+        print('Inverse test reconstruction stiffness (R2):',invComponentR2Y,'\n')
 
         ## export for post-processing
         print('\nExporting:')

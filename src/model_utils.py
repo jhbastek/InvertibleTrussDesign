@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from train_parameters import *
-from voigt_rotation import *
+from src.voigt_rotation import *
 import pickle, io
 
 # unpickle object also with a CPU-only machine, see issue: https://github.com/pytorch/pytorch/issues/16797

@@ -1,9 +1,9 @@
 import numpy as np
-from voigt_rotation import get_rotation_matrix_np
 import plotly.express as plt
 import plotly.graph_objects as go
 import operator
 import functools
+from src.voigt_rotation import get_rotation_matrix_np
 
 class Topology:
     def __init__(self,lattice):
@@ -275,8 +275,11 @@ class Topology:
         return np.asarray(conn_list), np.asarray(coord_list)
 
     def plot(self):
-        fig = plt.scatter_3d(self.coordinates, x=0, y=1, z=2)
+        fig = plt.scatter_3d(self.coordinates, x=0, y=1, z=2, width=100)
         fig = self.connect_points(fig)
+        fig.update_layout(title_text='Predicted lattice (diameter = {:.3f})'.format(self.diameter), title_x=0.5)
+        fig.update_traces(marker=dict(size=5,
+                              line=dict(width=20)))
         fig.show()
 
     def connect_points(self, fig):

@@ -1,7 +1,7 @@
 __pycache__/*
 TestReg/*
 .vscode/*
-Training/*
+training/*
 Test.py
-data/*
-Predictions/*
+data/ignore/*
+prediction/*
