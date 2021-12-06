@@ -16,7 +16,7 @@ For further information, please first refer to the [paper](www), [supporting inf
   - Pytorch (tested on CUDA version 11.4)
   - Pandas
   - NumPy
-  - Plotly (used for plotting of the inversely designed structure)
+  - Plotly (used to plot the inversely designed structures)
 
 ## Citation
 If you use this code, please cite the following publication:
