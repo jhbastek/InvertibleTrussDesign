@@ -2,7 +2,7 @@ from math import *
 import numpy as np
 import torch
 import torch.nn.functional as F
-from parameters import *
+from train_parameters import *
 
 Voigt_notation = [(0, 0), (1, 1), (2, 2), (1, 2), (0, 2), (0, 1)]
 

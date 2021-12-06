@@ -1,7 +1,7 @@
 import pathlib
 import torch
 from torch.utils.data import DataLoader
-from parameters import *
+from train_parameters import *
 from loadDataset import *
 from normalization import decodeOneHot
 from model_utils import *
@@ -10,13 +10,17 @@ from errorAnalysis import compute_NMSE
 if __name__ == '__main__':
     
     ## define parameters
+    # set Young's modulus of base material
+    E = 114.
     # set softmax temperature (higher value enforces larger exploration)
     t = 100.
-    # set number of sample passes
+    # set number of resamplings (higher number might find better predictions)
     passes = 200
-    # set number of stored (best) predictions
+    # set number of stored predictions (with the lowest NMSE)
     stored_pred = 5
 
+    # prediction data path
+    dataPath_pred = 'data/pred_data.csv'
     # create directory
     pathlib.Path('predictions').mkdir(exist_ok=True)
 
@@ -27,7 +31,6 @@ if __name__ == '__main__':
     pred_set_loader = DataLoader(dataset=pred_set, num_workers=numWorkers, batch_size=len(pred_set))
     # Note: for test, batch_size=len(test_set) so that we load the entire test set at once
     C_target = next(iter(pred_set_loader))
-    print('\n-------------------------------------')
 
     ## load models
     # load F1
@@ -48,6 +51,8 @@ if __name__ == '__main__':
 
     with torch.no_grad():
         C_target = C_target.to(device)
+        # normalize stiffness by Young's modulus of base material
+        C_target /= E
         # repeat target lables to generate large variety of predictions
         C_target = C_target.repeat(1,passes).view(-1,21)
         # inverse prediction
@@ -123,6 +128,10 @@ if __name__ == '__main__':
         C_target = torch.unique(C_target, dim=0)
         C_target = torch.cat((torch.unsqueeze(torch.tensor(np.arange(num_samples)+1),1),C_target),dim=1)
 
+        # unnormalize stiffness by Young's modulus of base material
+        C_target *= E
+        selected_C_target_pred_pred *= E
+
         # push tensors back to cpu
         full_pred = full_pred.cpu()
         C_target = C_target.cpu()
@@ -132,4 +141,4 @@ if __name__ == '__main__':
         exportTensor("Predictions/full_pred",full_pred,['sample']+all_names)
         exportTensor("Predictions/C_target",C_target,['sample']+C_names)
         exportTensor("Predictions/C_target_pred_pred",selected_C_target_pred_pred,['sample']+C_names)
-        print('Finished.\n')
+        print('Finished.')

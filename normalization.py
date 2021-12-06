@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
-from parameters import *
+from train_parameters import *
 
 class Normalization:
     def __init__(self,data,dataType,strategy):

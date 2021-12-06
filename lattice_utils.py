@@ -1,6 +1,9 @@
 import numpy as np
 from voigt_rotation import get_rotation_matrix_np
-import matplotlib.pyplot as plt
+import plotly.express as plt
+import plotly.graph_objects as go
+import operator
+import functools
 
 class Topology:
     def __init__(self,lattice):
@@ -14,13 +17,15 @@ class Topology:
         compound_lattice_conn, compound_lattice_coord = self.correctBeamIntersections(compound_lattice_conn,compound_lattice_coord)
         compound_lattice_coord_def = self.affinely_deform_lattice(compound_lattice_coord,lattice)
         diameter = self.compute_diameter(compound_lattice_conn, compound_lattice_coord, compound_lattice_coord_def, lattice)
-        return compound_lattice_conn, compound_lattice_coord, diameter
+        return compound_lattice_conn, compound_lattice_coord_def, diameter
 
+    # apply affine deformation
     def affinely_deform_lattice(self,compound_lattice_coord,lattice):
         affine_def = self.get_affine_deformation(lattice)
         final_lattice_coord = np.linalg.multi_dot([compound_lattice_coord,affine_def.transpose()])
         return final_lattice_coord
 
+    # compute affine deformation matrix
     def get_affine_deformation(self,lattice):
         U = np.diag([lattice['U1'],lattice['U2'],lattice['U3']])
         V = np.diag([lattice['V1'],lattice['V2'],lattice['V3']])
@@ -28,12 +33,13 @@ class Topology:
         R2 = get_rotation_matrix_np(lattice['R2_theta'],lattice['R2_rot_ax1'],lattice['R2_rot_ax2'])
         return np.linalg.multi_dot([R2, V, R1, U])
 
-    def create_individual_lattice(self,lattice_index,lattice_rep):
+    # create lattice based on given elementary topology and tesselation
+    def create_individual_lattice(self,lattice_index,lattice_tess):
         conn, coord = self.get_topology(lattice_index)
         temp_conn = conn.copy()
         temp_coord = coord.copy()
         UC_nodes = len(coord)
-        if lattice_rep == 2:
+        if lattice_tess == 2:
             for i in range(3):
                 temp_coord[:,i] = temp_coord[:,i]+1
                 coord = np.concatenate((coord,np.stack((temp_coord[:,0],temp_coord[:,1],temp_coord[:,2]),axis=1)))
@@ -84,19 +90,6 @@ class Topology:
 
         return red_conn, red_coord
 
-    def plot(self):
-        ax = plt.axes(projection='3d')
-        ax.scatter3D(self.coordinates[:,0],self.coordinates[:,1],self.coordinates[:,2],'ro')
-        self.connect_points(ax)
-        plt.show()
-
-    def connect_points(self, ax):
-        for i in range(len(self.connectity)):
-            x1, x2 = self.coordinates[self.connectity[i,0],0], self.coordinates[self.connectity[i,1],0]
-            y1, y2 = self.coordinates[self.connectity[i,0],1], self.coordinates[self.connectity[i,1],1]
-            z1, z2 = self.coordinates[self.connectity[i,0],2], self.coordinates[self.connectity[i,1],2]
-            ax.plot3D([x1,x2],[y1,y2],[z1,z2],'gray')
-
     def compute_diameter(self,conn,coord,coord_def,lattice):
         beam_weights = self.generate_beam_weights(conn,coord)
         weighted_length = 0.
@@ -108,6 +101,7 @@ class Topology:
         diameter = np.sqrt(4.*area/np.pi)
         return diameter
 
+    # generate factor for beams that are only partly in considered UC
     def generate_beam_weights(self,conn,coord):
         eps = 1.e-6
         beam_weigts = np.ones((len(conn)))
@@ -118,8 +112,8 @@ class Topology:
                     beam_weigts[i] /= 2.
         return beam_weigts
 
+    # compute the shortest distance between two lines, see http://paulbourke.net/geometry/pointlineplane/ for details
     def line_line_intersect(self,p1,p2,p3,p4):
-    # compute the shortest distance between to lines, see http://paulbourke.net/geometry/pointlineplane/ for details
         spatialTolerance = 1.e-6
         corner_intersection = 0
         p13 = p1 - p3
@@ -182,6 +176,7 @@ class Topology:
                 pc = pb + (pa - pb) / 2.
             return intersect_flag, corner_intersection, pc
 
+    # correct all intersecting beams and introduces new nodes at points of intersection
     def correctBeamIntersections(self,conn,coord):
 
         prev_elements = 0
@@ -278,6 +273,21 @@ class Topology:
             coord_list = coord.tolist()
 
         return np.asarray(conn_list), np.asarray(coord_list)
+
+    def plot(self):
+        fig = plt.scatter_3d(self.coordinates, x=0, y=1, z=2)
+        fig = self.connect_points(fig)
+        fig.show()
+
+    def connect_points(self, fig):
+        fig_temp = [fig]
+        for i in range(len(self.connectity)):
+            x1, x2 = self.coordinates[self.connectity[i,0],0], self.coordinates[self.connectity[i,1],0]
+            y1, y2 = self.coordinates[self.connectity[i,0],1], self.coordinates[self.connectity[i,1],1]
+            z1, z2 = self.coordinates[self.connectity[i,0],2], self.coordinates[self.connectity[i,1],2]
+            fig_temp.append(plt.line_3d(x=[x1,x2],y=[y1,y2],z=[z1,z2]))
+        fig_temp = go.Figure(data=functools.reduce(operator.add, [_.data for _ in fig_temp]))
+        return fig_temp
 
     def get_topology(self,lattice_type):
         if lattice_type == 0:

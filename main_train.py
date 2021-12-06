@@ -1,7 +1,7 @@
 import pathlib
 import torch
 from torch.utils.data import DataLoader
-from parameters import *
+from train_parameters import *
 from loadDataset import *
 from model_utils import *
 from normalization import decodeOneHot
@@ -103,7 +103,7 @@ if __name__ == '__main__':
                 F2_train_loss = fwdLoss.item()
             F1_features_test, R1_test, V_test, R2_test, C_ort_test, C_test = \
                 F1_features_test.to(device), R1_test.to(device), V_test.to(device), R2_test.to(device), C_ort_test.to(device), C_test.to(device)
-            # same as above but using the test data
+            # prediction using test data
             C_ort_test_pred = F1(F1_features_test)
             F2_features_test_pred = assemble_F2_features(C_ort_test_pred,R1_test,V_test,C_ort_scaling)
             C_hat_test_pred = F2(F2_features_test_pred)
@@ -161,7 +161,7 @@ if __name__ == '__main__':
                 # store (batch) training loss
                 inv_train_loss = invLoss.item()
             C_test = C_test.to(device)
-            # same as above but using the test data
+            # prediction using test data
             rho_U_test_pred, V_test_pred, R1_test_pred, R2_test_pred, topology_test_pred = invModel_output(G1,G2,C_test,t,'gumbel')
             F1_features_test_pred = torch.cat((rho_U_test_pred, topology_test_pred), dim=1)
             C_ort_test_pred = F1(F1_features_test_pred)
@@ -252,4 +252,4 @@ if __name__ == '__main__':
         exportTensor("Training/C_test",C_test,C_names)
         exportTensor("Training/C_test_pred",C_test_pred,C_names)
         exportTensor("Training/C_test_pred_pred",C_test_pred_pred,C_names)
-        print('Finished.\n')
+        print('Finished.')

@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from parameters import *
+from train_parameters import *
 from voigt_rotation import *
 import pickle, io
 

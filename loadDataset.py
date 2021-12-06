@@ -2,13 +2,12 @@ import torch
 from torch.utils.data import TensorDataset
 import numpy as np
 import pandas as pd
-from parameters import *
+from train_parameters import *
 from normalization import Normalization
 from voigt_rotation import *
 import pickle
 from model_utils import CPU_Unpickler
-
-#################################################     
+  
 def exportTensor(name,data,cols, header=True):
     df=pd.DataFrame.from_records(data.detach().numpy())
     if(header):
@@ -22,12 +21,10 @@ def exportList(name,data):
 
 def getNormalization(save_normalization=False):
     
-    ######################################################    
     data = pd.read_csv(dataPath,nrows=1000)
     # check for NaNs 
     assert not data.isnull().values.any()
     
-    ##############---INIT TENSORS---##############
     F1_features = torch.tensor(data[F1_features_names].values)
     R2 = torch.tensor(data[R2_names].values)
     V = torch.tensor(data[V_names].values)
@@ -38,7 +35,6 @@ def getNormalization(save_normalization=False):
     R2_transposed = torch.cat((-a,b,c),dim=1)
     unrotatedlabelTensor = direct_rotate(C,R2_transposed)
 
-    ##############---INIT NORMALIZATION---##############
     F1_features_scaling = Normalization(F1_features,F1_features_types,F1_features_scaling_strategy)
     V_scaling = Normalization(V,V_types,V_scaling_strategy)
     C_ort_scaling = Normalization(C_ort, C_ort_types,C_ort_scaling_strategy)
@@ -57,30 +53,25 @@ def getNormalization(save_normalization=False):
             pickle.dump(C_scaling, file_, -1)
         with open('normalization/C_hat_scaling.pickle', 'wb') as file_:
             pickle.dump(C_hat_scaling, file_, -1)
-
     return F1_features_scaling, C_ort_scaling, C_scaling, V_scaling, C_hat_scaling
 
 def getSavedNormalization():
-    
-    ######################################################    
+       
     F1_features_scaling = CPU_Unpickler(open("normalization/F1_features_scaling.pickle", "rb", -1)).load()
     V_scaling = CPU_Unpickler(open("normalization/V_scaling.pickle", "rb", -1)).load()
     C_ort_scaling = CPU_Unpickler(open("normalization/C_ort_scaling.pickle", "rb", -1)).load()
     C_scaling = CPU_Unpickler(open("normalization/C_scaling.pickle", "rb", -1)).load()
     C_hat_scaling = CPU_Unpickler(open("normalization/C_hat_scaling.pickle", "rb", -1)).load()
-
     return F1_features_scaling, C_ort_scaling, C_scaling, V_scaling, C_hat_scaling
 
 def getDataset(F1_features_scaling, V_scaling, C_ort_scaling, C_scaling):
-    
-    ######################################################    
+      
     data = pd.read_csv(dataPath,nrows=1000)
     
     print('Data: ',data.shape)       
     # check for NaNs 
     assert not data.isnull().values.any()
     
-    ##############---INIT TENSORS---##############
     F1_features = torch.tensor(data[F1_features_names].values)
     R1 = torch.tensor(data[R1_names].values)
     R2 = torch.tensor(data[R2_names].values)
@@ -88,39 +79,27 @@ def getDataset(F1_features_scaling, V_scaling, C_ort_scaling, C_scaling):
     C_ort = torch.tensor(data[C_ort_names].values)
     C = torch.tensor(data[C_names].values)
 
-    ##############---INIT NORMALIZATION---##############
     F1_features = F1_features_scaling.normalize(F1_features)
     V = V_scaling.normalize(V)
     C_ort = C_ort_scaling.normalize(C_ort)
     C = C_scaling.normalize(C)
     
-    ##############---INIT Dataset and loader---##############
     dataset =  TensorDataset(F1_features.float(), R1.float(), V.float(), R2.float(), C_ort.float(), C.float())
-    l1 = round(len(dataset)*trainSplit)
+    l1 = round(len(dataset)*traintest_split)
     l2 = len(dataset) - l1
     print('train/test: ',[l1,l2],'\n\n')
     train_set, test_set = torch.utils.data.random_split(dataset, [l1,l2], generator=torch.Generator().manual_seed(42))
-
     return train_set, test_set
 
 def getDataset_pred(C_scaling):
     
-    ######################################################    
     data = pd.read_csv(dataPath_pred)
     
     print('Data: ',data.shape)       
     # check for NaNs 
     assert not data.isnull().values.any()
     
-    ##############---INIT TENSORS---##############
-    C = torch.tensor(data[C_names].values)#, device=device)
-    # C = torch.div(C,114)
-    # C = torch.mul(C,20)
-
-    ##############---INIT NORMALIZATION---##############
+    C = torch.tensor(data[C_names].values)
     C = C_scaling.normalize(C)
-    
-    ##############---INIT Dataset and loader---##############
     dataset =  C.float()
-
     return dataset

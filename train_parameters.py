@@ -1,13 +1,11 @@
 import torch
 
-# training data
-dataPath = 'data/enhanced_topologies_2nd_rot_uniform.csv'
-# prediction data
-dataPath_pred = 'data/lumpe_data_1k.csv'
-
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-# define colum names from data
+# training data path
+dataPath = 'data/training_data.csv'
+
+# define column names from data
 F1_features_names = ['relative_density','U1','U2','U3','lattice_type1','lattice_type2','lattice_type3','lattice_rep1','lattice_rep2','lattice_rep3']
 R1_names = ['R1_theta','R1_rot_ax1','R1_rot_ax2']
 V_names = ['V1','V2','V3']
@@ -22,7 +20,7 @@ V_types = ['continuous']*3
 C_ort_types = ['continuous']*9
 C_types = ['continuous']*21
 
-# define scaling stratey
+# define scaling strategies
 F1_features_scaling_strategy = 'min-max-1'
 V_scaling_strategy = 'min-max-1'
 C_ort_scaling_strategy = 'min-max-2'
@@ -30,28 +28,27 @@ C_scaling_strategy = 'min-max-2'
 C_hat_scaling_strategy = 'min-max-2'
 
 # define train/test split
-trainSplit = 0.99
-testSplit = 0.01
+traintest_split = 0.99
 
 # define batch size and numWorkers
-batchSize = 1024#8192
+batchSize = 8192
 numWorkers = 0
 
-# define training parameters
+## define training parameters
+# F1 training
 F1_train = False
-F1_train_epochs = 2
-F1_arch = [2560,'leaky',2560,'leaky']
+F1_train_epochs = 100
+F1_arch = [512,'leaky',512,'leaky']
 F1_learning_rate = 1e-3
-
+# F2 training
 F2_train = False
-F2_train_epochs = 2
-F2_arch = [2560,'leaky',2560,'leaky',2560,'leaky']
+F2_train_epochs = 150
+F2_arch = [1024,'leaky',1024,'leaky',1024,'leaky']
 F2_learning_rate = 1e-3
-
+# inverse training (G1 & G2)
 inv_train = False
-inv_train_epochs = 2
-# invArch = [2560,'leaky',2560,'leaky',1280,'leaky',1280,'leaky',640,'leaky',640,'leaky']
-inv_arch = [25,'leaky',]
+inv_train_epochs = 250
+inv_arch = [2560,'leaky',2560,'leaky',1280,'leaky',1280,'leaky',640,'leaky',640,'leaky']
 inv_learning_rate = 1e-4
 
 # define loss function
