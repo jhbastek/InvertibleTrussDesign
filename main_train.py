@@ -17,7 +17,7 @@ if __name__ == '__main__':
     pathlib.Path('training/history').mkdir(exist_ok=True)
 
     # load and preprocess data
-    F1_features_scaling, C_ort_scaling, C_scaling, V_scaling, C_hat_scaling = getNormalization(True)
+    F1_features_scaling, C_ort_scaling, C_scaling, V_scaling, C_hat_scaling = getNormalization()
     train_set, test_set = getDataset(F1_features_scaling, V_scaling, C_ort_scaling, C_scaling)
     train_data_loader = DataLoader(dataset=train_set, num_workers=numWorkers, batch_size=batchSize)
     test_data_loader = DataLoader(dataset=test_set, num_workers=numWorkers, batch_size=len(test_set))
