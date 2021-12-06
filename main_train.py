@@ -9,6 +9,7 @@ from src.errorAnalysis import computeR2
 
 if __name__ == '__main__':
     
+    np.random.seed(1234)
     torch.manual_seed(1234)
     
     # create directories
