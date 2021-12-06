@@ -34,7 +34,7 @@ traintest_split = 0.99
 batchSize = 8192
 numWorkers = 0
 
-## define training parameters
+## define training protocol
 # F1 training
 F1_train = False
 F1_train_epochs = 100
