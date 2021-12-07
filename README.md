@@ -1,4 +1,4 @@
-# Inverse design of metamaterials with given anisotropic stiffness
+# Inverting the structury-property map of truss metamaterials via deep learning
 
 We introduce a framework to inversely design metamaterials with a given anisotropic elasticity, as presented in our paper ['Inverting the structure-property map of truss metamaterials via deep learning'](www). 
 This repository consists of three main scripts:
