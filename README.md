@@ -6,7 +6,7 @@ This repository consists of three main scripts:
 - **main_predict.py** predicts and stores a variety of inverse designs given a certain set of anistropic stiffness tensors. It must be provided in a .csv-file, as, e.g., the provided anisotropic bone samples in 'data/prediction.csv' (which can be run to reproduce the presented results). Note that the predicted stiffnesses slightly differs from the one presented, which was computed and verified with the inhouse finite element simulation.
 - **main_export.py** plots the predicted lattice descriptor and converts it into a list of nodal position and connectivities for further postprocessing. Additionally, it warns the user if the requested stiffness is to stiff or soft for the considered range of relative densities and Young's modulus, in which case main_predict.py should be rerun with a suitable Young's modulus.
 
-For further information, please first refer to the [paper](www), [supporting information](www), or contact [Jan-Hendrik Bastek](mailto:jbastek@ethz.ch).
+For further information, please first refer to the [paper](www), [supporting information](www), or reach out to [Jan-Hendrik Bastek](mailto:jbastek@ethz.ch).
 
 ## Requirements
 
