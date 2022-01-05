@@ -49,7 +49,7 @@ print('NMSE: {:.3f}\n-------------------------------------'.format(compute_NMSE(
 if plot_lattice:
     exported_lattice.plot()
 if export_lattice:
-    print('Exporte connectivities and coordinates of lattice.\n-------------------------------------')
+    print('Export connectivities and coordinates of lattice.\n-------------------------------------')
     conn=np.array(exported_lattice.connectity)
     coord=np.array(exported_lattice.coordinates)
     np.savetxt('prediction/conn_coord/connectivities.csv', conn, fmt='%i', delimiter=',')
