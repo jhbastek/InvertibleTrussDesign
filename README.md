@@ -25,4 +25,4 @@ For further information, please first refer to the [paper](https://www.pnas.org/
 
 ## Citation
 
-If you use this code, please cite the following publication: Bastek, J.-H., Kumar, S., Telgen, B. et al. Inverting the structure-property map of truss metamaterials via deep learning. Proc. Natl. Acad. Sci. U.S.A. 119 (1), e2111505119 (2022). https://doi.org/10.1073/pnas.2115601119
+If you use this code, please cite the following publication: Bastek, J.-H., Kumar, S., Telgen, B. et al. Inverting the structure-property map of truss metamaterials via deep learning. Proc. Natl. Acad. Sci. U.S.A. 119 (1), e2111505119 (2022). https://doi.org/10.1073/pnas.2111505119
