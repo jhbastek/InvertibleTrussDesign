@@ -12,7 +12,7 @@ and run the corresponding script:
 - **main_predict.py** predicts and stores a variety of inverse designs given a certain set of anistropic stiffness tensors. These tensors must be provided in Voigt notation via a .csv-file in 'data/prediction.csv', as, e.g., the provided anisotropic bone samples which can be run to reproduce the presented results. (Note that the predicted stiffnesses slightly differ from the ones presented in the paper, which were computed and verified using our inhouse finite element framework.)
 - **main_export.py** should only be executed after main_predict.py. It plots the predicted lattice descriptor and converts it into a list of nodal position and connectivities for further postprocessing. Additionally, it warns the user if the requested stiffness is to stiff or soft for the considered range of relative densities and Young's modulus, in which case main_predict.py should be rerun with a suitable Young's modulus of the base material.
 
-For further information, please first refer to the [paper](https://www.pnas.org/content/119/1/e2111505119), [supporting information](https://www.pnas.org/content/pnas/suppl/2021/12/30/2111505119.DCSupplemental/pnas.2111505119.sapp.pdf), or reach out to [Jan-Hendrik Bastek](mailto:jbastek@ethz.ch).
+For further information, please first refer to the [paper](https://www.pnas.org/content/119/1/e2111505119), [supporting information](https://www.pnas.org/doi/10.1073/pnas.2111505119#supplementary-materials), or reach out to [Jan-Hendrik Bastek](mailto:jbastek@ethz.ch).
 
 ## Requirements
 
