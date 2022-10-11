@@ -1,3 +1,5 @@
+<p align="center"><img src="illustration.png" width="500"\></p>
+
 # Inverting the structury-property map of truss metamaterials via deep learning
 
 We introduce a framework to inversely design truss metamaterials with a given anisotropic elasticity as described in ['Inverting the structure-property map of truss metamaterials via deep learning'](https://www.pnas.org/content/119/1/e2111505119).
