@@ -16,7 +16,7 @@ For further information, please first refer to the [paper](https://www.pnas.org/
 
 ## Requirements
 
-- Python (tested on version  3.7.1)
+- Python (tested on version 3.7.1)
 - Python packages:
   - Pytorch (tested on CUDA version 11.4)
   - Pandas
