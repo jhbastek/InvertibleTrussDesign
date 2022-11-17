@@ -32,7 +32,6 @@ If you use this code, please cite our [publication](https://www.pnas.org/content
 @article{Bastek2022,
 author = {Bastek, Jan-Hendrik and Kumar, Siddhant and Telgen, Bastian and Glaesener, Rapha{\"{e}}l N and Kochmann, Dennis M},
 doi = {10.1073/pnas.2111505119},
-file = {:C\:/Users/jbastek/Desktop/PhD/Literature/Papers/Data-driven design of lattice structures/e2111505119.full.pdf:pdf},
 issn = {0027-8424},
 journal = {Proceedings of the National Academy of Sciences},
 month = {jan},
