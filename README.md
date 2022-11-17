@@ -27,7 +27,7 @@ For further information, please first refer to the [publication](https://www.pna
 
 ## Citation
 
-If you use this code, please cite our [publication](https://www.pnas.org/content/119/1/e2111505119).
+If this code is useful for your research, please cite our [publication](https://www.pnas.org/content/119/1/e2111505119).
 ```bibtex
 @article{Bastek2022,
 author = {Bastek, Jan-Hendrik and Kumar, Siddhant and Telgen, Bastian and Glaesener, Rapha{\"{e}}l N and Kochmann, Dennis M},
