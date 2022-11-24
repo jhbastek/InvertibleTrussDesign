@@ -1,4 +1,4 @@
-<p align="center"><img src="illustration.png" width="600"\></p>
+<p align="center"><img src="illustration.png" width="400"\></p>
 
 # Inverting the structury-property map of truss metamaterials via deep learning
 
